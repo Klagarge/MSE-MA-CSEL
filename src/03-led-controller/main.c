@@ -121,10 +121,19 @@ static void* timer_thread(void* arg) {
     return NULL;
 }
 
-static void configure_timer(int* timer_fd, long period_ms) {
+int create_timer(long period_ms) {
+
+    // Create timerfd
+    int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (timer_fd == -1) {
+        perror("timerfd_create failed");
+        exit(10);
+    }
+
+    // Configure timer to expire every period_ms milliseconds
     // https://www.man7.org/linux/man-pages/man3/itimerspec.3type.html
     
-    static struct itimerspec its;
+    struct itimerspec its;
     
     // Periodic interval
     its.it_interval.tv_sec = period_ms / 1000;
@@ -134,14 +143,16 @@ static void configure_timer(int* timer_fd, long period_ms) {
     its.it_value.tv_sec = period_ms / 1000;
     its.it_value.tv_nsec = (period_ms % 1000) * 1000000;
     
-    if (timerfd_settime(*timer_fd, 0, &its, NULL) == -1) {
+    if (timerfd_settime(timer_fd, 0, &its, NULL) == -1) {
         perror("timerfd_settime failed");
-        exit(1);
+        exit(11);
     }
+
+    return timer_fd;
 }
 
 void link_timer_to_epoll(int* timer_fd, int* epoll_fd) {
-    static struct epoll_event ev;
+    struct epoll_event ev;
     ev.events = EPOLLIN;
     ev.data.fd = *timer_fd;
     if (epoll_ctl(*epoll_fd, EPOLL_CTL_ADD, *timer_fd, &ev) == -1) {
@@ -154,14 +165,7 @@ int main(int argc, char* argv[]) {
     ThreadData data;
     pthread_t thread;
 
-    // Create timerfd
-    data.timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    if (data.timer_fd == -1) {
-        perror("timerfd_create failed");
-        return 1;
-    }
-
-    configure_timer(&data.timer_fd, DEFAULT_TIME_MS);
+    data.timer_fd = create_timer(DEFAULT_TIME_MS);
 
     // Create epoll instance
     data.epoll_fd = epoll_create1(0);
