@@ -111,18 +111,22 @@ static void* timer_thread(void* arg) {
     return NULL;
 }
 
-static void configure_timer(int* timer_fd, long period_ns) {
+static void configure_timer(int* timer_fd, long period_ms) {
     // https://www.man7.org/linux/man-pages/man3/itimerspec.3type.html
-    struct itimerspec its;
+    
+    static struct itimerspec its;
+    
     // Periodic interval
-    its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = period_ns;
+    its.it_interval.tv_sec = period_ms / 1000;
+    its.it_interval.tv_nsec = (period_ms % 1000) * 1000000;
+    
     // Initial expiration with same value as periodic interval
-    its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = period_ns;
+    its.it_value.tv_sec = period_ms / 1000;
+    its.it_value.tv_nsec = (period_ms % 1000) * 1000000;
+    
     if (timerfd_settime(*timer_fd, 0, &its, NULL) == -1) {
         perror("timerfd_settime failed");
-        return 1;
+        exit(1);
     }
 }
 int main(int argc, char* argv[]) {
@@ -136,13 +140,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    configure_timer(&data.timer_fd, DEFAULT_TIME_MS * 1000000);
+    configure_timer(&data.timer_fd, DEFAULT_TIME_MS);
 
 
 
     if (pthread_create(&thread, NULL, timer_thread, &data) != 0) {
-        fprintf(stderr, "Failed to create timer thread\n");
-        return 1;
+        perror("Failed to create timer thread");
+        exit(1);
     }
 
     pthread_join(thread, NULL);
