@@ -30,6 +30,8 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <sys/timerfd.h>
 
 /*
  * status led - gpioa.10 --> gpio10
@@ -39,9 +41,13 @@
 #define GPIO_UNEXPORT "/sys/class/gpio/unexport"
 #define GPIO_LED      "/sys/class/gpio/gpio10"
 #define LED           "10"
+#define DEFAULT_TIME_MS 1000
 
-static int open_led()
-{
+typedef struct {
+    int timer_fd;
+} ThreadData;
+
+static int open_led() {
     // unexport pin out of sysfs (reinitialization)
     int f = open(GPIO_UNEXPORT, O_WRONLY);
     write(f, LED, strlen(LED));
@@ -62,41 +68,84 @@ static int open_led()
     return f;
 }
 
-int main(int argc, char* argv[])
-{
-    long duty   = 2;     // %
-    long period = 1000;  // ms
-    if (argc >= 2) period = atoi(argv[1]);
-    period *= 1000000;  // in ns
+static void toggle_led(int led) {
+    static int k = 0;
+    if (k%2 == 1) {
+        printf("ping %d\n", k>>1);
+        pwrite(led, "1", sizeof("1"), 0);
+    } else {
+        pwrite(led, "0", sizeof("0"), 0);
+    }
+    k += 1;
+}
 
-    // compute duty period...
-    long p1 = period / 100 * duty;
-    long p2 = period - p1;
-
+static void* timer_thread(void* arg) {
+    ThreadData* data = (ThreadData*)arg;
+    
     int led = open_led();
     pwrite(led, "1", sizeof("1"), 0);
+
+    long period = DEFAULT_TIME_MS * 1000000;  // ns
+
+    // compute duty period...
+    long p1 = period / 100 * 2;  // 2% duty cycle
+    long p2 = period - p1;
 
     struct timespec t1;
     clock_gettime(CLOCK_MONOTONIC, &t1);
 
     int k = 0;
-    while (1) {
+    while(1) {
         struct timespec t2;
         clock_gettime(CLOCK_MONOTONIC, &t2);
 
-        long delta =
-            (t2.tv_sec - t1.tv_sec) * 1000000000 + (t2.tv_nsec - t1.tv_nsec);
+        long delta = (t2.tv_sec - t1.tv_sec) * period + (t2.tv_nsec - t1.tv_nsec);
 
         int toggle = ((k == 0) && (delta >= p1)) | ((k == 1) && (delta >= p2));
         if (toggle) {
             t1 = t2;
-            k  = (k + 1) % 2;
-            if (k == 0)
-                pwrite(led, "1", sizeof("1"), 0);
-            else
-                pwrite(led, "0", sizeof("0"), 0);
+            k = (k + 1) % 2;
+            toggle_led(led);
         }
     }
+    return NULL;
+}
+
+static void configure_timer(int* timer_fd, long period_ns) {
+    // https://www.man7.org/linux/man-pages/man3/itimerspec.3type.html
+    struct itimerspec its;
+    // Periodic interval
+    its.it_interval.tv_sec = 0;
+    its.it_interval.tv_nsec = period_ns;
+    // Initial expiration with same value as periodic interval
+    its.it_value.tv_sec = 0;
+    its.it_value.tv_nsec = period_ns;
+    if (timerfd_settime(*timer_fd, 0, &its, NULL) == -1) {
+        perror("timerfd_settime failed");
+        return 1;
+    }
+}
+int main(int argc, char* argv[]) {
+    ThreadData data;
+    pthread_t thread;
+
+    // Create timerfd
+    data.timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+    if (data.timer_fd == -1) {
+        perror("timerfd_create failed");
+        return 1;
+    }
+
+    configure_timer(&data.timer_fd, DEFAULT_TIME_MS * 1000000);
+
+
+
+    if (pthread_create(&thread, NULL, timer_thread, &data) != 0) {
+        fprintf(stderr, "Failed to create timer thread\n");
+        return 1;
+    }
+
+    pthread_join(thread, NULL);
 
     return 0;
 }
