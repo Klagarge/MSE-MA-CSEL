@@ -43,6 +43,7 @@
 #define GPIO_LED      "/sys/class/gpio/gpio10"
 #define LED           "10"
 #define DEFAULT_TIME_MS 1000
+#define DUTY_CYCLE_PERCENT 2
 
 typedef struct {
     int timer_fd;
@@ -72,7 +73,7 @@ static int open_led() {
 
 static void toggle_led(int led) {
     static int k = 0;
-    if (k%2 == 1) {
+    if (k%2 == 0) {
         printf("ping %d\n", k>>1);
         pwrite(led, "1", sizeof("1"), 0);
     } else {
@@ -87,28 +88,35 @@ static void* timer_thread(void* arg) {
     int led = open_led();
     pwrite(led, "1", sizeof("1"), 0);
 
-    long period = DEFAULT_TIME_MS * 1000000;  // ns
-
-    // compute duty period...
-    long p1 = period / 100 * 2;  // 2% duty cycle
-    long p2 = period - p1;
-
-    struct timespec t1;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
-
-    int k = 0;
+    
+    long flash_period_ms = DEFAULT_TIME_MS / 100 * DUTY_CYCLE_PERCENT; // 2% duty
+    struct epoll_event ev;
+    
     while(1) {
-        struct timespec t2;
-        clock_gettime(CLOCK_MONOTONIC, &t2);
 
-        long delta = (t2.tv_sec - t1.tv_sec) * period + (t2.tv_nsec - t1.tv_nsec);
-
-        int toggle = ((k == 0) && (delta >= p1)) | ((k == 1) && (delta >= p2));
-        if (toggle) {
-            t1 = t2;
-            k = (k + 1) % 2;
-            toggle_led(led);
+        int n = epoll_wait(data->epoll_fd, &ev, 1, -1);
+        if (n == -1) {
+            perror("epoll_wait failed");
+            break;
         }
+
+        uint64_t val;
+        if (read(data->timer_fd, &val, sizeof(val)) != sizeof(val)) {
+            perror("read timerfd failed");
+            break;
+        }
+
+        toggle_led(led);
+        struct timespec t1, t2;
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        t2.tv_sec = t1.tv_sec + flash_period_ms / 1000;
+        t2.tv_nsec = t1.tv_nsec + (flash_period_ms % 1000) * 1000000;
+
+        while(t1.tv_sec < t2.tv_sec || (t1.tv_sec == t2.tv_sec && t1.tv_nsec < t2.tv_nsec)) {
+            clock_gettime(CLOCK_MONOTONIC, &t1);
+        }
+        
+        toggle_led(led);
     }
     return NULL;
 }
@@ -163,10 +171,6 @@ int main(int argc, char* argv[]) {
     }
 
     link_timer_to_epoll(&data.timer_fd, &data.epoll_fd);
-
-
-
-
 
 
     if (pthread_create(&thread, NULL, timer_thread, &data) != 0) {
