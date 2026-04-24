@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/timerfd.h>
+#include <sys/epoll.h>  
 
 /*
  * status led - gpioa.10 --> gpio10
@@ -45,6 +46,7 @@
 
 typedef struct {
     int timer_fd;
+    int epoll_fd;
 } ThreadData;
 
 static int open_led() {
@@ -129,6 +131,17 @@ static void configure_timer(int* timer_fd, long period_ms) {
         exit(1);
     }
 }
+
+void link_timer_to_epoll(int* timer_fd, int* epoll_fd) {
+    static struct epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = *timer_fd;
+    if (epoll_ctl(*epoll_fd, EPOLL_CTL_ADD, *timer_fd, &ev) == -1) {
+        perror("ERROR while add timerfd to epoll");
+        exit(1);
+    }
+}
+
 int main(int argc, char* argv[]) {
     ThreadData data;
     pthread_t thread;
@@ -141,6 +154,18 @@ int main(int argc, char* argv[]) {
     }
 
     configure_timer(&data.timer_fd, DEFAULT_TIME_MS);
+
+    // Create epoll instance
+    data.epoll_fd = epoll_create1(0);
+    if (data.epoll_fd == -1) {
+        perror("ERROR while create epoll");
+        exit(1);
+    }
+
+    link_timer_to_epoll(&data.timer_fd, &data.epoll_fd);
+
+
+
 
 
 
