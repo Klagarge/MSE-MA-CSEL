@@ -46,6 +46,8 @@ const char* BTN[NBR_BTN] =  {BTN1, BTN2, BTN3};
 
 
 void* btn_thread(void* arg) {
+    ThreadData* data = (ThreadData*)arg;
+
     // Open all button with the right flags
     int btn[NBR_BTN] = {0};
     for(int i=0; i<NBR_BTN; i++) {
@@ -100,17 +102,23 @@ void* btn_thread(void* arg) {
 
             if (events[i].data.fd == btn[0]) {
                 if (buf[0] == '1') {
-                    printf("Decrease led frequency\n");
+                    data->flash_period_ms += 200;
+                    printf("Decrease led frequency to %ld ms\n", data->flash_period_ms);
                 }
 
             } else if (events[i].data.fd == btn[1]) {
                 if (buf[0] == '1') {
-                    printf("Reset led frequency\n");
+                    data->flash_period_ms = DEFAULT_TIME_MS;
+                    printf("Reset led frequency: %ld ms\n", data->flash_period_ms);
                 }
 
             } else if (events[i].data.fd == btn[2]) {
                 if (buf[0] == '1') {
-                    printf("Increase led frequency\n");
+                    data->flash_period_ms -= 200;
+                    if (data->flash_period_ms <= 0) {
+                        data->flash_period_ms = 200; // Minimum period of 200ms
+                    }
+                    printf("Increase led frequency to %ld ms\n", data->flash_period_ms);
                 }
             }
         }
@@ -129,13 +137,10 @@ static void* timer_thread(void* arg) {
     led_off(led);
 
 
-    long time_on_ms = data->flash_period_ms / 100 * DUTY_CYCLE_PERCENT; // 2% duty
-    long time_off_ms = data->flash_period_ms - time_on_ms; // rest of the period
 
     struct epoll_event ev;
 
     int isLedOn = 0;
-    int k = 0;
     while(1) {
 
         int n = epoll_wait(data->epoll_fd, &ev, 1, -1);
@@ -150,12 +155,13 @@ static void* timer_thread(void* arg) {
             break;
         }
 
+        long time_on_ms = data->flash_period_ms / 100 * DUTY_CYCLE_PERCENT; // 2% duty
+        long time_off_ms = data->flash_period_ms - time_on_ms; // rest of the period
 
         int delay = 0;
         if (isLedOn == 0) {
             delay = time_on_ms; // 2% duty
             led_on(led);
-            printf("ping %d\n", k++);
             isLedOn = 1;
         } else {
             delay = time_off_ms; // rest of the period
@@ -196,10 +202,9 @@ int main(int argc, char* argv[])
     }
 
 
-// Yann -------------------
     // Setup button thread
     pthread_t btn_thread_inst;
-    pthread_create(&btn_thread_inst, NULL, btn_thread, NULL);
+    pthread_create(&btn_thread_inst, NULL, btn_thread, &data);
 
 
     // pthread_join(btn_thread_inst, NULL);
