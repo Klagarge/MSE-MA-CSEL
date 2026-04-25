@@ -34,6 +34,8 @@
 #include <sys/timerfd.h>
 #include <sys/epoll.h>  
 
+#include "timer.h"
+
 /*
  * status led - gpioa.10 --> gpio10
  * power led  - gpiol.10 --> gpio362
@@ -46,6 +48,7 @@
 #define DUTY_CYCLE_PERCENT 2
 
 typedef struct {
+    long flash_period_ms;
     int timer_fd;
     int epoll_fd;
 } ThreadData;
@@ -71,27 +74,28 @@ static int open_led() {
     return f;
 }
 
-static void toggle_led(int led) {
-    static int k = 0;
-    if (k%2 == 0) {
-        printf("ping %d\n", k>>1);
-        pwrite(led, "1", sizeof("1"), 0);
-    } else {
-        pwrite(led, "0", sizeof("0"), 0);
-    }
-    k += 1;
+void led_on(int led) {
+    pwrite(led, "1", sizeof("1"), 0);
+}
+
+void led_off(int led) {
+    pwrite(led, "0", sizeof("0"), 0);
 }
 
 static void* timer_thread(void* arg) {
     ThreadData* data = (ThreadData*)arg;
     
     int led = open_led();
-    pwrite(led, "1", sizeof("1"), 0);
+    led_off(led);
 
     
-    long flash_period_ms = DEFAULT_TIME_MS / 100 * DUTY_CYCLE_PERCENT; // 2% duty
+    long time_on_ms = data->flash_period_ms / 100 * DUTY_CYCLE_PERCENT; // 2% duty
+    long time_off_ms = data->flash_period_ms - time_on_ms; // rest of the period
+
     struct epoll_event ev;
     
+    int isLedOn = 0;
+    int k = 0;
     while(1) {
 
         int n = epoll_wait(data->epoll_fd, &ev, 1, -1);
@@ -106,80 +110,50 @@ static void* timer_thread(void* arg) {
             break;
         }
 
-        toggle_led(led);
-        struct timespec t1, t2;
-        clock_gettime(CLOCK_MONOTONIC, &t1);
-        t2.tv_sec = t1.tv_sec + flash_period_ms / 1000;
-        t2.tv_nsec = t1.tv_nsec + (flash_period_ms % 1000) * 1000000;
 
-        while(t1.tv_sec < t2.tv_sec || (t1.tv_sec == t2.tv_sec && t1.tv_nsec < t2.tv_nsec)) {
-            clock_gettime(CLOCK_MONOTONIC, &t1);
+        int delay = 0;
+        if (isLedOn == 0) {
+            delay = time_on_ms; // 2% duty
+            led_on(led);
+            printf("ping %d\n", k++);
+            isLedOn = 1;
+        } else {
+            delay = time_off_ms; // rest of the period
+            led_off(led);
+            isLedOn = 0;
         }
-        
-        toggle_led(led);
+
+        timer_set_time(&data->timer_fd, delay);
+
     }
     return NULL;
 }
 
-int create_timer(long period_ms) {
 
-    // Create timerfd
-    int timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    if (timer_fd == -1) {
-        perror("timerfd_create failed");
-        exit(10);
-    }
-
-    // Configure timer to expire every period_ms milliseconds
-    // https://www.man7.org/linux/man-pages/man3/itimerspec.3type.html
-    
-    struct itimerspec its;
-    
-    // Periodic interval
-    its.it_interval.tv_sec = period_ms / 1000;
-    its.it_interval.tv_nsec = (period_ms % 1000) * 1000000;
-    
-    // Initial expiration with same value as periodic interval
-    its.it_value.tv_sec = period_ms / 1000;
-    its.it_value.tv_nsec = (period_ms % 1000) * 1000000;
-    
-    if (timerfd_settime(timer_fd, 0, &its, NULL) == -1) {
-        perror("timerfd_settime failed");
-        exit(11);
-    }
-
-    return timer_fd;
-}
-
-void link_timer_to_epoll(int* timer_fd, int* epoll_fd) {
-    struct epoll_event ev;
-    ev.events = EPOLLIN;
-    ev.data.fd = *timer_fd;
-    if (epoll_ctl(*epoll_fd, EPOLL_CTL_ADD, *timer_fd, &ev) == -1) {
-        perror("ERROR while add timerfd to epoll");
-        exit(1);
-    }
-}
 
 int main(int argc, char* argv[]) {
     ThreadData data;
     pthread_t thread;
 
-    data.timer_fd = create_timer(DEFAULT_TIME_MS);
+    data.flash_period_ms = DEFAULT_TIME_MS;
+
+    // Create timerfd
+    data.timer_fd = timer_create_empty();
+    timer_set_time(&data.timer_fd, data.flash_period_ms);
 
     // Create epoll instance
     data.epoll_fd = epoll_create1(0);
     if (data.epoll_fd == -1) {
         perror("ERROR while create epoll");
-        exit(1);
+        exit(20);
     }
 
-    link_timer_to_epoll(&data.timer_fd, &data.epoll_fd);
+    timer_link_to_epoll(&data.timer_fd, &data.epoll_fd);
 
 
     if (pthread_create(&thread, NULL, timer_thread, &data) != 0) {
         perror("Failed to create timer thread");
-        exit(1);
+        exit(30);
     }
 
     pthread_join(thread, NULL);
