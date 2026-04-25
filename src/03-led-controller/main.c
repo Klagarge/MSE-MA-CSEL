@@ -13,6 +13,7 @@
 #include <pthread.h>
 
 #include "setup.c"
+#include "timer.h"
 
 /*
  * status led - gpioa.10 --> gpio10
@@ -31,9 +32,28 @@
 
 #define NBR_BTN 3
 
+#define DEFAULT_TIME_MS 1000
+#define DUTY_CYCLE_PERCENT 2
+
+
+typedef struct {
+    long flash_period_ms;
+    int timer_fd;
+    int epoll_fd;
+} ThreadData;
+
 // constant
 const char* GPIO_BTN[NBR_BTN] = {GPIO_BTN1, GPIO_BTN2, GPIO_BTN3};
 const char* BTN[NBR_BTN] =  {BTN1, BTN2, BTN3};
+
+
+void led_on(int led) {
+    pwrite(led, "1", sizeof("1"), 0);
+}
+
+void led_off(int led) {
+    pwrite(led, "0", sizeof("0"), 0);
+}
 
 void* btn_thread(void* arg) {
     // Open all button with the right flags
@@ -112,49 +132,92 @@ void* btn_thread(void* arg) {
     close(epfd);
 }
 
-int main(int argc, char* argv[])
-{
-    long duty   = 2;     // %
-    long period = 1000;  // ms
-    if (argc >= 2) period = atoi(argv[1]);
-    period *= 1000000;  // in ns
-
-    // compute duty period...
-    long p1 = period / 100 * duty;
-    long p2 = period - p1;
+static void* timer_thread(void* arg) {
+    ThreadData* data = (ThreadData*)arg;
 
     int led = open_led(GPIO_LED, LED);
-    pwrite(led, "1", sizeof("1"), 0);
+    led_off(led);
 
-    struct timespec t1;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
 
+    long time_on_ms = data->flash_period_ms / 100 * DUTY_CYCLE_PERCENT; // 2% duty
+    long time_off_ms = data->flash_period_ms - time_on_ms; // rest of the period
+
+    struct epoll_event ev;
+
+    int isLedOn = 0;
+    int k = 0;
+    while(1) {
+
+        int n = epoll_wait(data->epoll_fd, &ev, 1, -1);
+        if (n == -1) {
+            perror("epoll_wait failed");
+            break;
+        }
+
+        uint64_t val;
+        if (read(data->timer_fd, &val, sizeof(val)) != sizeof(val)) {
+            perror("read timerfd failed");
+            break;
+        }
+
+
+        int delay = 0;
+        if (isLedOn == 0) {
+            delay = time_on_ms; // 2% duty
+            led_on(led);
+            printf("ping %d\n", k++);
+            isLedOn = 1;
+        } else {
+            delay = time_off_ms; // rest of the period
+            led_off(led);
+            isLedOn = 0;
+        }
+
+        timer_set_time(&data->timer_fd, delay);
+
+    }
+    return NULL;
+}
+
+int main(int argc, char* argv[])
+{
+    ThreadData data;
+    pthread_t thread;
+
+    data.flash_period_ms = DEFAULT_TIME_MS;
+
+    // Create timerfd
+    data.timer_fd = timer_create_empty();
+    timer_set_time(&data.timer_fd, data.flash_period_ms);
+
+    // Create epoll instance
+    data.epoll_fd = epoll_create1(0);
+    if (data.epoll_fd == -1) {
+        perror("ERROR while create epoll");
+        exit(20);
+    }
+
+    timer_link_to_epoll(&data.timer_fd, &data.epoll_fd);
+
+
+    if (pthread_create(&thread, NULL, timer_thread, &data) != 0) {
+        perror("Failed to create timer thread");
+        exit(30);
+    }
+
+
+// Yann -------------------
     // Setup button thread
     pthread_t btn_thread_inst;
     pthread_create(&btn_thread_inst, NULL, btn_thread, NULL);
 
 
-    int k = 0;
+    // pthread_join(btn_thread_inst, NULL);
+    // pthread_join(thread, NULL);
+
     while (1) {
-        struct timespec t2;
-        clock_gettime(CLOCK_MONOTONIC, &t2);
-
-        long delta =
-            (t2.tv_sec - t1.tv_sec) * 1000000000 + (t2.tv_nsec - t1.tv_nsec);
-
-        int toggle = ((k == 0) && (delta >= p1)) | ((k == 1) && (delta >= p2));
-        if (toggle) {
-            t1 = t2;
-            k  = (k + 1) % 2;
-            if (k == 0)
-                pwrite(led, "1", sizeof("1"), 0);
-            else
-                pwrite(led, "0", sizeof("0"), 0);
-        }
-
+        sleep(1);
     }
-
-    pthread_join(btn_thread_inst, NULL);
 
 
     return 0;
