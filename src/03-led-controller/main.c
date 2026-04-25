@@ -1,19 +1,17 @@
-#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 
 #include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <sys/inotify.h>
 #include <pthread.h>
 
-#include "setup.c"
 #include "timer.h"
+#include "led.h"
+#include "button.h"
 
 /*
  * status led - gpioa.10 --> gpio10
@@ -47,19 +45,11 @@ const char* GPIO_BTN[NBR_BTN] = {GPIO_BTN1, GPIO_BTN2, GPIO_BTN3};
 const char* BTN[NBR_BTN] =  {BTN1, BTN2, BTN3};
 
 
-void led_on(int led) {
-    pwrite(led, "1", sizeof("1"), 0);
-}
-
-void led_off(int led) {
-    pwrite(led, "0", sizeof("0"), 0);
-}
-
 void* btn_thread(void* arg) {
     // Open all button with the right flags
     int btn[NBR_BTN] = {0};
     for(int i=0; i<NBR_BTN; i++) {
-        btn[i] = open_btn(GPIO_BTN[i], BTN[i]);
+        btn[i] = btn_open(GPIO_BTN[i], BTN[i]);
         if (btn[i] < 0) {
             perror("Failed to open button");
         }
@@ -135,7 +125,7 @@ void* btn_thread(void* arg) {
 static void* timer_thread(void* arg) {
     ThreadData* data = (ThreadData*)arg;
 
-    int led = open_led(GPIO_LED, LED);
+    int led = led_open(GPIO_LED, LED);
     led_off(led);
 
 
