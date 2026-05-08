@@ -58,3 +58,4 @@ doc/**/*.pdf
 
 build
 src/03-led-controller/led-controller
+src/04-multiprocessing/multiprocessing
