@@ -8,6 +8,7 @@
 #include <sys/epoll.h>
 #include <sys/inotify.h>
 #include <pthread.h>
+#include <syslog.h>
 
 #include "timer.h"
 #include "led.h"
@@ -103,13 +104,21 @@ void* btn_thread(void* arg) {
             if (events[i].data.fd == btn[0]) {
                 if (buf[0] == '1') {
                     data->flash_period_ms += 200;
-                    printf("Decrease led frequency to %ld ms\n", data->flash_period_ms);
+                    char* log_msg = malloc(100);
+                    snprintf(log_msg, 100, "Increase flash period to %ld ms", data->flash_period_ms);
+                    syslog(LOG_INFO, "%s", log_msg);
+                    printf("%s\n", log_msg);
+                    free(log_msg);
                 }
 
             } else if (events[i].data.fd == btn[1]) {
                 if (buf[0] == '1') {
                     data->flash_period_ms = DEFAULT_TIME_MS;
-                    printf("Reset led frequency: %ld ms\n", data->flash_period_ms);
+                    char* log_msg = malloc(100);
+                    snprintf(log_msg, 100, "Reset flash period to %ld ms", data->flash_period_ms);
+                    syslog(LOG_INFO, "%s", log_msg);
+                    printf("%s\n", log_msg);
+                    free(log_msg);
                 }
 
             } else if (events[i].data.fd == btn[2]) {
@@ -118,7 +127,11 @@ void* btn_thread(void* arg) {
                     if (data->flash_period_ms <= 0) {
                         data->flash_period_ms = 200; // Minimum period of 200ms
                     }
-                    printf("Increase led frequency to %ld ms\n", data->flash_period_ms);
+                    char* log_msg = malloc(100);
+                    snprintf(log_msg, 100, "Decrease flash period to %ld ms", data->flash_period_ms);
+                    syslog(LOG_INFO, "%s", log_msg);
+                    printf("%s\n", log_msg);
+                    free(log_msg);
                 }
             }
         }
@@ -175,10 +188,11 @@ static void* timer_thread(void* arg) {
     return NULL;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     ThreadData data;
     pthread_t thread;
+    openlog("CSEL Logs", LOG_PID, LOG_USER);
+    syslog(LOG_INFO, "Start logging silly led-controller");
 
     data.flash_period_ms = DEFAULT_TIME_MS;
 
@@ -206,14 +220,10 @@ int main(int argc, char* argv[])
     pthread_t btn_thread_inst;
     pthread_create(&btn_thread_inst, NULL, btn_thread, &data);
 
-
-    // pthread_join(btn_thread_inst, NULL);
-    // pthread_join(thread, NULL);
-
     while (1) {
         sleep(1);
     }
 
-
+    closelog();
     return 0;
 }
