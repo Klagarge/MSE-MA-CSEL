@@ -1,0 +1,13 @@
+CompileFlags:
+    Add:
+        # Architecture and cross-compilation
+        - "--target=aarch64-linux-gnu"
+
+        # Setup sysroot for buildroot
+        - "--sysroot=/buildroot/output/host/aarch64-buildroot-linux-gnu/sysroot"
+
+        # Add specific header of linux from buildroot
+        - "-I/buildroot/output/build/linux-headers-5.15.148/include"
+        - "-I/buildroot/output/build/linux-headers-5.15.148/arch/arm64/include"
+        - "-I/buildroot/output/build/linux-headers-5.15.148/arch/arm64/include/generated"
+        - "-I/buildroot/output/build/linux-headers-5.15.148/**"

@@ -1,0 +1,7 @@
+build:
+    make
+
+clean:
+    rm -rf build
+    rm -rf .obj
+    rm multiprocessing
