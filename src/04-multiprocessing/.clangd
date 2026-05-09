@@ -2,7 +2,6 @@ CompileFlags:
     Add:
         # Architecture and cross-compilation
         - "--target=aarch64-linux-gnu"
-        - "-D_GNU_SOURCE"
 
         # Setup sysroot for buildroot
         - "--sysroot=/buildroot/output/host/aarch64-buildroot-linux-gnu/sysroot"
