@@ -1,19 +1,15 @@
-#include <stdio.h>
+// #define _GNU_SOURCE
 
+#include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <sys/wait.h>
-#include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <syslog.h>
 #include <string.h>
-
-#define __USE_GNU // not the define from the professor !!!!!!!!!!!!!!!!!!!!!
 #include <sched.h>
 #include <sys/resource.h>
+#include <signal.h>
 
 const int NBR_MSG = 5;
 const char * MSG[] = {
@@ -32,7 +28,7 @@ static void catch_signal(int signal) {
             break;
         case SIGINT:
             printf("SIGINT received\n");
-            exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS); // to avoid to be blocked and kill it with ctrl+c
             break;
         case SIGQUIT:
             printf("SIGQUIT received\n");
@@ -71,61 +67,52 @@ int main(int argc, char* argv[]) {
     int err = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
     if (err == -1) {
         perror("socketpair fail");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
+
+    /* Prepare cpu set for process affinity */
+    cpu_set_t set;
+    CPU_ZERO(&set);
+    int child_cpu = 0;
+    int parent_cpu = 1;
 
     /* Fork a child process */
     pid_t pid = fork();
-    if (pid == 0) {
-        cpu_set_t set;
-        CPU_ZERO(&set);
-        CPU_SET(0, &set);
-        int ret = sched_setaffinity(pid, sizeof(set), &set);
+
+    if (pid == 0) {   /* Parent processus */
+        pid_t parent_pid = getpid();
+        printf("Parent processus: pid=%d\n", parent_pid);
+
+        /* Setup CPU for process */
+        CPU_SET(child_cpu, &set);
+        int ret = sched_setaffinity(parent_pid, sizeof(set), &set);
         if (ret == -1) {
             perror("sched_setaffinity");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
-        /* Parent processus */
-        printf("Parent processus: pid=%d\n", pid);
-        pid_t child_pid = getpid();
+        /* Read messages from child */
         char buffer[100];
-
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < NBR_MSG; i++) {
             read(fd[1], buffer, strlen(MSG[i]));
-            printf("%s\n", buffer);
+            printf("Message %d: %s\n", i, buffer);
             memset(buffer, 0, sizeof(buffer));
         }
 
-        int status = 0;
-        int waited_pid = waitpid(pid, &status, 0);
+    } else if (pid > 0) { /* Child processus */
+        pid_t child_pid = getpid();
+        printf("Child processus: pid=%d\n", child_pid);
 
-        if (waited_pid == -1) {
-            perror("waitpid");
-        } else {
-            if (WIFEXITED(status)) {
-                printf("Child exited with status %d\n",
-                       WEXITSTATUS(status));
-            } else if (WIFSIGNALED(status)) {
-                printf("Child killed by signal %d\n",
-                       WTERMSIG(status));
-            }
-        }
-
-    } else if (pid > 0) {
-        cpu_set_t set;
-        CPU_ZERO(&set);
-        CPU_SET(1, &set);
-        int ret = sched_setaffinity(pid, sizeof(set), &set);
+        /* Setup CPU affinity for processus */
+        CPU_SET(parent_cpu, &set);
+        int ret = sched_setaffinity(child_pid, sizeof(set), &set);
         if (ret == -1) {
             perror("sched_setaffinity");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
-        /* Child processus */
-        printf("Child processus: pid=%d\n", pid);
 
+        /* Write messages for the parent processus */
         for (int i = 0; i < NBR_MSG; i++) {
-            if(i==2) sleep(2);
             write(fd[0], MSG[i], strlen(MSG[i]));
         }
 
@@ -144,5 +131,5 @@ int main(int argc, char* argv[]) {
     kill(getpid(), SIGABRT);
     kill(getpid(), SIGINT);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
