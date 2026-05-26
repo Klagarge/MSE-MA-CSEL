@@ -1,9 +1,5 @@
 #!/bin/sh
 
-# mount -t tmpfs none /sys/fs/cgroup
-# mkdir /sys/fs/cgroup/set
-# mount -t cgroup -o memory,cpu,cpuset cgroups /sys/fs/cgroup/set
-
 mount -t tmpfs none /sys/fs/cgroup # Mount a temporary filesystem to /sys/fs/cgroup
 
 # Memory
