@@ -2,6 +2,10 @@
 
 = Multiprocessing
 
+== Process, signals, and communication
+
+// TODO Yann
+
 == CGroups
 
 The goal of this part is to understand how to use cgroups to limit the resources of a process. We will initially focus on memory, but cgroups can also be used to limit CPU, I/O, and other ressources.
