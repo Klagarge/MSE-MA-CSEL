@@ -48,10 +48,7 @@
 // 
 
 #include "lab03-silly_led/main.typ"
-
-#lorem(150)
-
-#lorem(50)
+#include "lab04-multiprocessing/main.typ"
 
 
 //--------------------------------------

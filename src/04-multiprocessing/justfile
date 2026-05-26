@@ -1,7 +1,17 @@
-build:
+@default:
+  just --list
+
+@build:
     make
 
-clean:
+@process:
+    make
+
+@cgroups:
+    make cgroups
+
+@clean:
     rm -rf build
     rm -rf .obj
-    rm multiprocessing
+    rm -f -- multiprocessing
+    rm -f -- cgroups
