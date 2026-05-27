@@ -70,8 +70,33 @@ if (ret == -1) {
     exit(EXIT_FAILURE);
 }
 ```
-// TODO result of 
 
+This can be verified by executing the program and observed in the `htop` tool.
+
+```bash
+$ ./multiprocessing
+Child processus: pid=273
+Parent processus: pid=274
+Message 0: Hallo, hallo !
+Message 1: ça geht !
+Message 2: Comment vont les olives ?
+Message 3: Sacré trucs tes trucs là.
+Message 4: Ta où les vaches !!!!!
+SIGHUP received
+SIGQUIT received
+SIGTERM received
+SIGABRT received
+SIGINT received
+
+```
+#figure(
+    image("control_cpu_process_ex_1.png"),
+    caption: [Execution of the program multiprocessus]
+)<multiprocessus>
+
+
+The @multiprocessus shows the PID and the core of the processus and they can be compared to the output of the executable before. 
+The child processus has the PID 273 and the core 0. The parent processus has th PID 274 and the core 1.
 
 == CGroups
 
