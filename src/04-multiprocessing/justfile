@@ -2,10 +2,10 @@
   just --list
 
 @build:
-    make
+    make process cgroups
 
 @process:
-    make
+    make process
 
 @cgroups:
     make cgroups
