@@ -4,7 +4,74 @@
 
 == Process, signals, and communication
 
-// TODO Yann
+The aim of this laboratory is to create a child process from the parent with `fork()`. Then, each processus executes the same code until they are killed. This happens the same when programming GPU with CUDA or OpenMP. The different processus are differenciated by the PID (Process ID).
+
+The child must communicate with the parents  with a `socketpair`:
+```c
+/* Setup socket for inter-process communication */
+    int fd[2];
+    int err = socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
+    if (err == -1) {
+        perror("socketpair fail");AF_UNIX
+        exit(EXIT_FAILURE);
+    }
+```
+This creates a local socket for inter-process communication. It return 2 file descriptors to read and write on the same file.
+
+The program must handle some signal and print them:
+```c
+static void catch_signal(int signal) {
+
+    switch (signal) {
+        case SIGHUP:
+            printf("SIGHUP received\n");
+            break;
+        case SIGINT:
+            printf("SIGINT received\n");
+            exit(EXIT_SUCCESS); // to avoid to be blocked and kill it with ctrl+c
+            break;
+        case SIGQUIT:
+            printf("SIGQUIT received\n");
+            break;
+        case SIGTERM:
+            printf("SIGTERM received\n");
+            break;
+        case SIGABRT:
+            printf("SIGABRT received\n");
+            break;
+    }
+
+
+}
+
+static void install_catch_signal()
+{
+    struct sigaction act = {
+        .sa_handler = catch_signal,
+    };
+    sigemptyset(&act.sa_mask);
+    sigaction(SIGHUP, &act, 0);
+    sigaction(SIGINT, &act, 0);
+    sigaction(SIGQUIT, &act, 0);
+    sigaction(SIGTERM, &act, 0);
+    sigaction(SIGABRT, &act, 0);
+}
+```
+
+There was one thing to be anticipate. If the `ctrl+c` is handled, it has to exit the process. Because the process will block the terminal. The only way to kill the process is to open in another terminal a tool like `top` or `htop`.
+
+Finally, each processus has his own core. This setup with the `sched_setaffinity`:
+```c
+/* Setup CPU for process */
+CPU_SET(child_cpu, &set);
+int ret = sched_setaffinity(parent_pid, sizeof(set), &set);
+if (ret == -1) {
+    perror("sched_setaffinity");
+    exit(EXIT_FAILURE);
+}
+```
+// TODO result of 
+
 
 == CGroups
 
