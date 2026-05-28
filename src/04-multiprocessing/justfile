@@ -10,8 +10,12 @@
 @cgroups:
     make cgroups
 
+@max-cpu:
+    make max-cpu
+
 @clean:
     rm -rf build
     rm -rf .obj
     rm -f -- multiprocessing
     rm -f -- cgroups
+    rm -f -- max-cpu

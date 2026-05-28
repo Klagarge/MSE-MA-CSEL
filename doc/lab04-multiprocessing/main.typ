@@ -98,13 +98,13 @@ SIGINT received
 The @multiprocessus shows the PID and the core of the processus and they can be compared to the output of the executable before. 
 The child processus has the PID 273 and the core 0. The parent processus has th PID 274 and the core 1.
 
-== CGroups
+== CGroups memory
 
 The goal of this part is to understand how to use cgroups to limit the resources of a process. We will initially focus on memory, but cgroups can also be used to limit CPU, I/O, and other ressources.
 
-For limit the memory usage of a process, we cans use the `memory` subsystem of cgroups. We use cgroup v1 with our Nanopi. 
+For limit the memory usage of a process, we cans use the `memory` subsystem of cgroups. We use cgroup v1 with our Nanopi.
 
-We must first mount a temporary filesystem for cgroups: 
+We must first mount a temporary filesystem for cgroups:
 ```bash
 |> mount -t tmpfs none /sys/fs/cgroup
 ```
@@ -138,8 +138,8 @@ We can then run our test program that allocates memory in a loop and see what ha
 for (i = 0; i < NUM_BLOCKS; i++) {
 
     // Allocate a block of memory
-    blocks[i] = malloc(BLOCK_SIZE);    
-    
+    blocks[i] = malloc(BLOCK_SIZE);
+
     // [...]
     // check if failed and error, clean and exit
 
@@ -176,7 +176,7 @@ It's possible to modify this behavior in several ways:
 
 === How to watch the memory usage?
 
-We can monitor the memory usage of a cgroup by reading it directly from the file in the specific cgroups: 
+We can monitor the memory usage of a cgroup by reading it directly from the file in the specific cgroups:
 
 ```bash
 # Current memory usage in bytes
@@ -187,3 +187,87 @@ We can monitor the memory usage of a cgroup by reading it directly from the file
 |> cat /sys/fs/cgroup/memory/0/memory.max_usage_in_bytes
 20971520
 ```
+
+== CGroups CPU
+To check this part, we need a tiny program that consumes CPU with at least two process.
+The following program creates a child process that performs CPU intensive work, while the parent process also performs CPU intensive work. We can then use cgroups to limit the CPU usage of one of the processes and observe the effect.
+```c
+int main() {
+  pid_t pid = fork();
+
+  if (pid == 0) {
+    cpu_intensive_work("Child process");
+    exit(0);
+  } else {
+    cpu_intensive_work("Parent process");
+    wait(NULL);
+    return 0;
+  }
+}
+```
+
+Based on previous exercice, we should already have mounted the cgroup filesystem.
+```bash
+|>  mount -t tmpfs none /sys/fs/cgroup
+```
+
+We can then create and mount the cgroup filesystem for the `cpuset` subsystem
+```bash
+# Create a directory for the cpuset cgroup
+|> mkdir /sys/fs/cgroup/cpuset
+
+# Mount the cgroup filesystem with cpuset
+|> mount -t cgroup -o cpu,cpuset cpuset /sys/fs/cgroup/cpuset
+```
+
+Now we had the prerequirements, we can create 2 groupes. One for each of our running programme. With the following command, we attribute on ore more CPU to each group (`cpuset.cpus`). I'm not sure about the `cpuset.mems` file, but it seems to be related to memory nodes. It's definetly a topic that should be explored more in depth, but for now, we set to `0` as specified in the lab instructions.
+
+```bash
+# Create and allocate CPU for programme "low"
+|> mkdir /sys/fs/cgroup/cpuset/low
+|> echo 1 > /sys/fs/cgroup/cpuset/low/cpuset.cpus
+|> echo 0 > /sys/fs/cgroup/cpuset/low/cpuset.mems
+
+# Create and allocate CPU for programme "high"
+|> mkdir /sys/fs/cgroup/cpuset/high
+|> echo 2,3 > /sys/fs/cgroup/cpuset/high/cpuset.cpus
+|> echo 0 > /sys/fs/cgroup/cpuset/high/cpuset.mems
+```
+
+We can then open 2 shells and run the test program in each of them, while adding the programme to the corresponding cgroup:
+```bash
+# In the first shell, add it on the "low" cgroup and run the test program
+|> . ./max-cpu.sh low
+
+# In the second shell, add it on the "high" cgroup and run the test program
+|> . ./max-cpu.sh high
+```
+
+We see on @max-cpu that as expected, both process in program _low_ is limited to CPU 1, while the programm _high_ is using CPU 2 and 3, one for each process.
+
+#figure(
+    image("max-cpu.png"),
+    caption: [CPU usage of the two programmes with dedicated resources]
+)<max-cpu>
+
+To share resources at 75% and 25%, we can use the `cpu.shares` file in the `cpu` cgroup. We attribute a value 3 time high for the _high_ group than for the _low_ group.
+
+```bash
+|> echo 75 > /sys/fs/cgroup/cpu/high/cpu.shares
+|> echo 25 > /sys/fs/cgroup/cpu/low/cpu.shares
+```
+
+Then running the test program in each shell, we see on @shared-cpu that the _high_ process is limited to 75% of the CPU, while the _low_ process is limited to 25%.
+```bash
+# In the first shell, add it on the "low" cgroup and run the test program
+|> . ./shared-cpu.sh low
+
+# In the second shell, add it on the "high" cgroup and run the test program
+|> . ./shared-cpu.sh high
+```
+
+
+#figure(
+    image("shared-cpu.png"),
+    caption: [CPU usage of the two programmes with shared resources]
+)<shared-cpu>
