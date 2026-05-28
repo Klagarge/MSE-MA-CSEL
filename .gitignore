@@ -58,7 +58,7 @@ doc/**/*.pdf
 
 build
 src/03-led-controller/led-controller
-src/04-multiprocessing/multiprocessing
+src/04-multiprocessing/process
 src/04-multiprocessing/cgroups
 src/04-multiprocessing/max-cpu
 src/05-optimization/ex01/basic

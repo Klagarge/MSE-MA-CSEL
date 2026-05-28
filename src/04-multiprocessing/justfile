@@ -2,7 +2,9 @@
   just --list
 
 @build:
-    make process cgroups
+    make process
+    make cgroups
+    make max-cpu
 
 @process:
     make process
@@ -16,6 +18,6 @@
 @clean:
     rm -rf build
     rm -rf .obj
-    rm -f -- multiprocessing
+    rm -f -- process
     rm -f -- cgroups
     rm -f -- max-cpu
