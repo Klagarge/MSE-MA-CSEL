@@ -40,9 +40,8 @@ static void catch_signal(int signal) {
             printf("SIGABRT received\n");
             break;
     }
-
-
 }
+```
 
 #pagebreak()
 

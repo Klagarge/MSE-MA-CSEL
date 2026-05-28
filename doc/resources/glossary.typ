@@ -42,6 +42,34 @@
     group: "Hardware"
   ),
   (
+    key: "l1",
+    short: "L1",
+    long: "Level 1 Cache",
+    description: "The primary cache of a CPU, typically built directly into the processor chip, representing the fastest but smallest cache level closest to the execution units.",
+    group: "Hardware"
+  ),
+  (
+    key: "l2",
+    short: "L2",
+    long: "Level 2 Cache",
+    description: "A secondary cache that is larger but slightly slower than the L1 cache, serving to catch cache misses from the L1 cache before querying system memory.",
+    group: "Hardware"
+  ),
+  (
+    key: "ram",
+    short: "RAM",
+    long: "Random-Access Memory",
+    description: "A form of volatile computer memory that can be read and changed in any order, used to store working data and machine code currently in use.",
+    group: "Hardware"
+  ),
+  (
+    key: "pc",
+    short: "PC",
+    long: "Program Counter",
+    description: "A processor register that indicates where the computer is in its program sequence, holding the address of the next instruction to be executed.",
+    group: "Hardware"
+  ),
+  (
     key: "led",
     short: "LED",
     long: "Light Emitting Diode",
@@ -61,7 +89,15 @@
     short: "PID",
     plural: "PIDs",
     long: "Process Identifier",
-    description: "A unique number assigned by the operating system kernel to identify an active process.",
+    description: "A unique numerical identifier assigned by the operating system kernel to each active process, used for managing, scheduling, and tracking processes.",
+    group: "Operating System"
+  ),
+  (
+    key: "irq",
+    short: "IRQ",
+    plural: "IRQs",
+    long: "Interrupt Request",
+    description: "A signal sent to the processor that temporarily suspends the current program execution to allow an Interrupt Service Routine (ISR) to run in response to a hardware event.",
     group: "Operating System"
   ),
   (
@@ -93,6 +129,14 @@
     group: "Computer Science"
   ),
   (
+    key: "ip",
+    short: "IP",
+    plural: "IPs",
+    long: "Internet Protocol",
+    description: "The principal communications protocol in the Internet protocol suite for relaying datagrams across network boundaries.",
+    group: "Computer Science"
+  ),
+  (
     key: "oom",
     short: "OOM",
     long: "Out of Memory",
@@ -111,6 +155,13 @@
     short: "syslog",
     long: "System Logging",
     description: "A standard protocol and utility for system message logging in UNIX and Linux systems, allowing applications to log messages to files, consoles, or remote syslog daemons.",
+    group: "Operating System"
+  ),
+  (
+    key: "perf",
+    short: "perf",
+    long: "Performance Events for Linux",
+    description: "A powerful performance supervising and analyzing tool in Linux, capable of profiling hardware performance counters, tracepoints, software performance counters, and dynamic probes.",
     group: "Operating System"
   ),
   (
