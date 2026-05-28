@@ -7,26 +7,6 @@ In this laboratory, the usage of `perf` as tool is experimented.
 
 == Exercise 1
 
-```
-Performance counter stats for './ex1':
-
-          40609.10 msec task-clock                #    1.000 CPUs utilized          
-                22      context-switches          #    0.542 /sec                   
-                 0      cpu-migrations            #    0.000 /sec                   
-             48867      page-faults               #    1.203 K/sec                  
-       33136692484      cycles                    #    0.816 GHz                    
-        1671194529      instructions              #    0.05  insn per cycle         
-         269592231      branches                  #    6.639 M/sec                  
-           1013366      branch-misses             #    0.38% of all branches        
-
-      40.618926728 seconds time elapsed
-
-      39.901620000 seconds user
-       0.296158000 seconds sys
-
-```
-This program has done 22 context-switches and has 40.6s elapsed.
-
 #task([
 Measure the performance of the ex1
 ],[
@@ -238,16 +218,6 @@ The same test was done with the `-01` compiler flag and there is almost no diffe
 == Exercise 3
 
 
-```bash
-$ perf record --call-graph dwarf -e cpu-clock -F 75 ./read-apache-logs access_log_NASA_Jul95_samples
-Couldn't synthesize bpf events.
-Processing log file access_log_NASA_Jul95_samples
-Found 14867 unique Hosts/IPs
-[ perf record: Woken up 335 times to write data ]
-[ perf record: Captured and wrote 83.687 MB perf.data (10269 samples) ]
-
-```
-
 The only line were there is a comparison of 2 element with the `==` operator is :
 ```c
 bool HostCounter::isNewHost(std::string hostname)
@@ -256,7 +226,7 @@ bool HostCounter::isNewHost(std::string hostname)
 }
 ```
 
-The program check if the host is already in the vector. It shows that this operation on `vector` is slow.
+The program check if the host is already in the vector. It shows that this operation on `vector` is slow. As the output shows below:
 
 ```
 # time ./read-apache-logs access_log_NASA_Jul95_samples
@@ -269,3 +239,41 @@ sys	0m 0.12s
 ```
 
 This collections library need to be transform in `set` collections to be faster.
+
+
+#figure(
+  image("command-after-optimization.png"),
+   caption:[`perf` report after optimization]
+)<command-opti>
+
+After changing the collection, the result can be observe by doing the report in @command-opti. The execution time has been significantly reduced as the output below:
+
+
+```
+# time ./read-apache-logs access_log_NASA_Jul95_samples
+Processing log file access_log_NASA_Jul95_samples
+Found 14867 unique Hosts/IPs
+real	0m 1.55s
+user	0m 1.36s
+sys	0m 0.10s
+```
+
+The performance of the `set` are really higher. It makes a huge gap with the vector with 2m15s.
+
+
+Finally, if the whole log file is read with 2 millions of inputs:
+```
+# time ./read-apache-logs access_log_NASA_Jul95
+askljdalksjda
+Processing log file access_log_NASA_Jul95
+Found 81983 unique Hosts/IPs
+real	0m 14.76s
+user	0m 13.90s
+sys	0m 0.68s
+```
+
+
+#task([Measure interruption latency and jitter], [
+  The hardware approach is chosen with an oscilloscop and a square-wave generator.
+  Fist, the generator toggle a pin of the processor. The routine interruption starts. Then, another pin make a pulse and it is meassured by an oscilloscope. The latency is the delay between the generator rising edge and the rising edge of the pulse inside the interruption. The jitter can be measured by repeating the measure of the latency. Finally, it appears the variation of the latency which is the jitter.
+])

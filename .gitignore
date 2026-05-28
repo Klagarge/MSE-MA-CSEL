@@ -58,10 +58,19 @@ doc/**/*.pdf
 
 build
 src/03-led-controller/led-controller
-src/04-multiprocessing/process
+src/04-multiprocessing/multiprocessing
 src/04-multiprocessing/cgroups
 src/04-multiprocessing/max-cpu
 src/05-optimization/ex01/basic
 src/05-optimization/ex01/optimized
 src/05-optimization/ex02/optimized
 src/05-optimization/ex02/basic
+
+src/05-optimization/ex03/ApacheAccessLogAnalyzer.d
+src/05-optimization/ex03/ApacheAccessLogAnalyzer.o
+src/05-optimization/ex03/HostCounter.d
+src/05-optimization/ex03/HostCounter.o
+src/05-optimization/ex03/main.d
+src/05-optimization/ex03/main.d
+src/05-optimization/ex03/perf.data
+src/05-optimization/ex03/read-apache-logs
