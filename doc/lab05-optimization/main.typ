@@ -34,7 +34,10 @@ This program has done 22 context-switches and has 40.6s elapsed.
 #task([
 Which error is in the program of ex1 ?
 ],[
-The program has 2 loops to go trhough the array. But, there is another loops which encapsulate the 2 others. It involves that the whole array is iterated through 10 times for an addition operation. That's the problem. This can be solve by removing the extren loop and putting a addition of 10:
+The error lies in how the array memory is accessed. In C, 2D arrays are stored in a "row-major" order, meaning elements of the same row are contiguous in memory. However, the original code accesses the array using `array[j][i]` within the loops, where `j` (the row) is the inner loop. 
+
+This causes the program to jump across memory addresses non-sequentially, triggering a cache miss almost every time. This can be solved by simply swapping the indices to `array[i][j]` (or swapping the loops) to process memory sequentially:
+
 
 ```c
     int i, j;
@@ -42,7 +45,7 @@ The program has 2 loops to go trhough the array. But, there is another loops whi
     {
         for (j = 0; j < SIZE; j++)
         {
-            array[j][i]+= 10;
+            array[i][j]+= 10;
         }
     }
 ```
@@ -52,23 +55,24 @@ With these modifications the performance must be a multiple of 10.
 ```
  Performance counter stats for './optimized':
 
-           4759.07 msec task-clock                #    0.998 CPUs utilized          
-                20      context-switches          #    4.203 /sec                   
+            474.62 msec task-clock                #    0.940 CPUs utilized          
+                15      context-switches          #   31.604 /sec                   
                  0      cpu-migrations            #    0.000 /sec                   
-             48866      page-faults               #   10.268 K/sec                  
-        3883198165      cycles                    #    0.816 GHz                    
-         282691820      instructions              #    0.07  insn per cycle         
-          40234737      branches                  #    8.454 M/sec                  
-            653642      branch-misses             #    1.62% of all branches        
+             48866      page-faults               #  102.959 K/sec                  
+         387200454      cycles                    #    0.816 GHz                    
+         253128815      instructions              #    0.65  insn per cycle         
+          39724528      branches                  #   83.698 M/sec                  
+            577317      branch-misses             #    1.45% of all branches        
 
-       4.768030627 seconds time elapsed
+       0.505146917 seconds time elapsed
 
-       4.385881000 seconds user
-       0.320226000 seconds sys
+       0.233682000 seconds user
+       0.237584000 seconds sys
+
 ```
 
-This can be observe by doing the same as before with `perf`. Before the time elapsed was around 40s and now about 4.7s. The same observation can be done with the cache missing:
-- optimzed  : 42103472
+This can be observe by doing the same as before with `perf`. Before the time elapsed was around 40s and now about 0.5s. The same observation can be done with the cache missing:
+- optimzed  : 753502
 - basic     : 406627550
 
 
@@ -112,7 +116,7 @@ This can be observe by doing the same as before with `perf`. Before the time ela
 - *Cache-missing*: This happens when the data used is not currently store in the cache. The ask is passed to the next memory : RAM.
 - *Branch-misses*: It happens when there is conditional branch. The CPU tries to predict the next instruction and misses.
 - *L1-dcache-load-misses*: It happens when the data is not store in the cache L1. It has the next memory technology, here cache L2.
-- *Cpu-migrations*: It indictes the number of times the program has changed of CPU thread.
+- *Cpu-migrations*: It indicates the number of times the program has changed of CPU core.
 - *Context-switches*: The program is sharing the resource with others. Sometimes, it less the cpu core to another. This involves a context-switching. It has to change some register like the PC.
 
 ])
@@ -210,15 +214,16 @@ The program fills an array of random between 0 and 512. Then it iterates 10'000 
   caption:[Ex02 timing optimization]
 )<sort-optimization>
 
-In @sort-optimization, there is a gain of 3s. But, an important augmentation of the branch misses. The rate has decreased from 33.17% (missed) to 0.08%.
+In @sort-optimization, there is a gain of around 3s due to a massive decrease in branch misses, dropping from 33.17% to 0.08%. 
+
+This is explained by the CPU's Branch Predictor. Inside the loop, the program checks if the value is `>= 256`. When the array is filled with random numbers, the CPU cannot predict the outcome of this condition, resulting in frequent pipeline flushes. However, when the array is sorted, the condition is always false for the first half of the array, and always true for the second half. The CPU easily predicts this pattern, avoiding branch misses and executing much faster.
 
 The same test was done with the `-01` compiler flag and there is almost no difference between the two scipts. The optimzed is around 4.12s and the basic is around 4.6s. The difference of 0.6 sec can be explained with the sort algorithm used in the optimized script, because this is the only difference.
 
 
 == Exercise 3
+By analyzing the call graph with `perf report`, we can trace the indirect calls to `std::operator==<char>` back to our application. The bottleneck originates in the `HostCounter::isNewHost` function, specifically during the `std::find` operation on a `std::vector`:
 
-
-The only line were there is a comparison of 2 element with the `==` operator is :
 ```c
 bool HostCounter::isNewHost(std::string hostname)
 {
@@ -226,7 +231,7 @@ bool HostCounter::isNewHost(std::string hostname)
 }
 ```
 
-The program check if the host is already in the vector. It shows that this operation on `vector` is slow. As the output shows below:
+Searching through an unsorted vector requires a linear comparison of strings ($O(N)$ complexity), which is highly inefficient. As shown below, processing just a sample of the logs takes over 2 minutes:
 
 ```
 # time ./read-apache-logs access_log_NASA_Jul95_samples
@@ -237,18 +242,15 @@ user	2m 14.68s
 sys	0m 0.12s
 
 ```
-
-This collections library need to be transform in `set` collections to be faster.
+To fix this, the data structure needs to be changed from std::vector to std::set. A set uses a tree-based or hash-based structure, reducing the search complexity to $O(log N)$ or $O(1)$.
 
 
 #figure(
   image("command-after-optimization.png"),
-   caption:[`perf` report after optimization]
+   caption:[ `perf` report after migrating to `std::set`]
 )<command-opti>
 
-After changing the collection, the result can be observe by doing the report in @command-opti. The execution time has been significantly reduced as the output below:
-
-
+After applying the changes, the perf report in @command-opti shows a much healthier execution profile. The execution time drops drastically, creating a massive performance gap compared to the initial vector implementation:
 ```
 # time ./read-apache-logs access_log_NASA_Jul95_samples
 Processing log file access_log_NASA_Jul95_samples
@@ -258,10 +260,7 @@ user	0m 1.36s
 sys	0m 0.10s
 ```
 
-The performance of the `set` are really higher. It makes a huge gap with the vector with 2m15s.
-
-
-Finally, if the whole log file is read with 2 millions of inputs:
+Even when processing the entire log file containing roughly 2 million entries, the optimized program finishes in under 15 seconds:
 ```
 # time ./read-apache-logs access_log_NASA_Jul95
 askljdalksjda
@@ -274,6 +273,12 @@ sys	0m 0.68s
 
 
 #task([Measure interruption latency and jitter], [
-  The hardware approach is chosen with an oscilloscop and a square-wave generator.
-  Fist, the generator toggle a pin of the processor. The routine interruption starts. Then, another pin make a pulse and it is meassured by an oscilloscope. The latency is the delay between the generator rising edge and the rising edge of the pulse inside the interruption. The jitter can be measured by repeating the measure of the latency. Finally, it appears the variation of the latency which is the jitter.
+  The hardware approach is chosen with an oscilloscope and a square-wave generator. 
+  First, the generator toggles a processor pin to trigger the interrupt routine. Then, another pin creates a pulse as a response, which is measured by the oscilloscope. The latency is the delay between the generator's rising edge and the response pulse. The jitter is the variation of this latency over multiple measurements.
+
+  To differentiate between Kernel Space and User Space:
+  - *Kernel Space*: The response pin is toggled directly inside the kernel's Interrupt Service Routine (IRQ handler / driver).
+  - *User Space*: The response pin is toggled by a user application that wakes up (using `epoll()`) after the kernel has handled the interrupt. 
+  
+  The difference between these two latency measurements represents the context-switch overhead from kernel mode to user mode.
 ])

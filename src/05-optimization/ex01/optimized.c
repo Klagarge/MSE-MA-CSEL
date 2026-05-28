@@ -13,7 +13,7 @@ int main (void)
     {
         for (j = 0; j < SIZE; j++)
         {
-            array[j][i]+= 10;
+            array[i][j]+= 10;
         }
     }
     
