@@ -38,7 +38,7 @@
 #show link: set text(fill: blue.darken(60%))
 #v(5em)
 #infobox()[
-  The repository for this labs can be found at the following address:
+  The repository for these labs can be found at the following address:
 
   #align(center)[https://github.com/Klagarge/MSE-MA-CSEL]
 ]

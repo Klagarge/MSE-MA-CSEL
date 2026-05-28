@@ -1,6 +1,6 @@
 #import "/doc/metadata.typ": *
 
-= Optimization
+= Linux System Optimisation
 
 In this laboratory, the usage of `perf` as tool is experimented. 
 

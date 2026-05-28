@@ -79,9 +79,9 @@ int main(int argc, char* argv[]) {
     /* Fork a child process */
     pid_t pid = fork();
 
-    if (pid == 0) {   /* Parent processus */
+    if (pid == 0) {   /* Parent process */
         pid_t parent_pid = getpid();
-        printf("Parent processus: pid=%d\n", parent_pid);
+        printf("Parent process: pid=%d\n", parent_pid);
 
         /* Setup CPU for process */
         CPU_SET(child_cpu, &set);
@@ -99,11 +99,11 @@ int main(int argc, char* argv[]) {
             memset(buffer, 0, sizeof(buffer));
         }
 
-    } else if (pid > 0) { /* Child processus */
+    } else if (pid > 0) { /* Child process */
         pid_t child_pid = getpid();
-        printf("Child processus: pid=%d\n", child_pid);
+        printf("Child process: pid=%d\n", child_pid);
 
-        /* Setup CPU affinity for processus */
+        /* Setup CPU affinity for process */
         CPU_SET(parent_cpu, &set);
         int ret = sched_setaffinity(child_pid, sizeof(set), &set);
         if (ret == -1) {
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        /* Write messages for the parent processus */
+        /* Write messages for the parent process */
         for (int i = 0; i < NBR_MSG; i++) {
             write(fd[0], MSG[i], strlen(MSG[i]));
         }
