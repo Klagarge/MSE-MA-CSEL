@@ -49,15 +49,10 @@
 
 #include "lab03-silly_led/main.typ"
 #include "lab04-multiprocessing/main.typ"
+#include "lab05-optimization/main.typ"
 
 
 //--------------------------------------
-#pagebreak()
-= Linux System Optimisation
-
-#lorem(150)
-
-#lorem(50)
 
 
 //-------------------------------------
