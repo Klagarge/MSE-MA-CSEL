@@ -1,5 +1,8 @@
-EXE=ex2
-SRCS=$(wildcard *.c)
+EXE_BASIC=basic
+EXE_OPTI=optimized
+
+SRCS_BASIC=basic.c
+SRCS_OPTI=optimized.c
 
 ifeq ($(target),)
 target=nano
@@ -10,14 +13,15 @@ CFLAGS=-Wall -Wextra -g -c -O0 -MD -std=gnu11 -D_GNU_SOURCE
 ifeq ($(target),nano)
 TOOLCHAIN_PATH=/buildroot/output/host/usr/bin/
 TOOLCHAIN=$(TOOLCHAIN_PATH)aarch64-linux-
-CFLAGS+=-mcpu=cortex-a53 -funwind-tables -fno-omit-frame-pointer
-##CFLAGS+=-O2
-OBJDIR=.obj/nano
-EXEC=$(EXE)
+CFLAGS+=-mcpu=cortex-a53 -funwind-tables
+CFLAGS+=-fno-omit-frame-pointer
+#CFLAGS+=-O2
+EXEC_SUFFIX=
 endif
 
 ifeq ($(target),host)
-EXEC=$(EXE)_h
+TOOLCHAIN=
+EXEC_SUFFIX=_h
 endif
 
 CC=$(TOOLCHAIN)gcc
@@ -27,28 +31,44 @@ STRIP=$(TOOLCHAIN)strip
 OBJDUMP=$(TOOLCHAIN)objdump
 
 OBJDIR=.obj/$(target)
-OBJS= $(addprefix $(OBJDIR)/, $(SRCS:.c=.o))
 
-$(OBJDIR)/%o: %c
+OBJS_BASIC = $(addprefix $(OBJDIR)/, $(SRCS_BASIC:.c=.o))
+OBJS_OPTI  = $(addprefix $(OBJDIR)/, $(SRCS_OPTI:.c=.o))
+
+EXEC_BASIC = $(EXE_BASIC)$(EXEC_SUFFIX)
+EXEC_OPTI  = $(EXE_OPTI)$(EXEC_SUFFIX)
+
+
+all: $(EXEC_BASIC) $(EXEC_OPTI)
+
+basic: $(EXEC_BASIC)
+opti: $(EXEC_OPTI)
+
+$(OBJDIR)/%.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS) $< -o $@
 
-all: $(OBJDIR)/ $(EXEC)
+$(EXEC_BASIC): $(OBJS_BASIC)
+	$(LD) $(OBJS_BASIC) $(LDFLAGS) -o $@
 
-$(EXEC): $(OBJS) $(LINKER_SCRIPT)
-	$(LD) $(OBJS) $(LDFLAGS) -o $@
+$(EXEC_OPTI): $(OBJS_OPTI)
+	$(LD) $(OBJS_OPTI) $(LDFLAGS) -o $@
 
-$(OBJDIR)/:
+$(OBJDIR):
 	mkdir -p $(OBJDIR)
 
+
 clean:
-	rm -Rf $(OBJDIR) $(EXEC) $(EXEC)_s *~ t.txt
+	rm -Rf $(OBJDIR) $(EXEC_BASIC) $(EXEC_OPTI) *~ t_*.txt
 
 clean_all: clean
-	rm -Rf .obj $(EXE) $(EXE)_s $(EXE)_a $(EXE)_a_s $(EXE)_h $(EXE)_h_s
+	rm -Rf .obj $(EXE_BASIC)* $(EXE_OPTI)*
 
-dump: all
-	$(OBJDUMP) -dS $(EXEC) > t.txt
+dump_basic: $(EXEC_BASIC)
+	$(OBJDUMP) -dS $(EXEC_BASIC) > t_basic.txt
 
--include $(OBJS:.o=.d)
+dump_opti: $(EXEC_OPTI)
+	$(OBJDUMP) -dS $(EXEC_OPTI) > t_opti.txt
 
-.PHONY: all clean clean_all dump
+-include $(OBJS_BASIC:.o=.d) $(OBJS_OPTI:.o=.d)
+
+.PHONY: all basic opti clean clean_all dump_basic dump_opti

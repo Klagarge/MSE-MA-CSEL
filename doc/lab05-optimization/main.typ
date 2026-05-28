@@ -5,6 +5,7 @@
 In this laboratory, the usage of `perf` as tool is experimented. 
 
 
+== Exercise 1
 
 ```
 Performance counter stats for './ex1':
@@ -181,4 +182,59 @@ sys	  0m 0.34s
   In @impact-perf, the tool does not significantly affect program execution. It is certainly due to the CPU allocations.
 
 ])
+
+== Exercise 2
+
+The program fills an array of random between 0 and 512. Then it iterates 10'000 times over all the array to make a sum of all number generated equal or bigger than 256.
+
+
+#figure(
+  table(
+    columns:  (1fr),
+    [Withtout Optimization],
+    [
+```
+
+     26170.47 msec task-clock                #    1.000 CPUs utilized          
+           17      context-switches          #    0.650 /sec                   
+            0      cpu-migrations            #    0.000 /sec                   
+           74      page-faults               #    2.828 /sec                   
+  21354981945      cycles                    #    0.816 GHz                    
+  14768657990      instructions              #    0.69  insn per cycle         
+    988541451      branches                  #   37.773 M/sec                  
+    327869867      branch-misses             #   33.17% of all branches        
+
+26.178296596 seconds time elapsed
+
+26.117025000 seconds user
+  0.003961000 seconds sys
+```
+    ], [With "sort" optimization],[
+      ```
+     23430.74 msec task-clock                
+           17      context-switches          #    0.726 /sec                   
+            0      cpu-migrations            #    0.000 /sec                   
+          109      page-faults               #    4.652 /sec                   
+  19119368029      cycles                    #    0.816 GHz                    
+  14818405467      instructions              #    0.78  insn per cycle         
+    997843744      branches                  #   42.587 M/sec                  
+       805002      branch-misses             #    0.08% of all branches        
+
+23.439504220 seconds time elapsed
+
+23.382177000 seconds user
+  0.003961000 seconds sys
+```
+    ]
+  ),
+  caption:[Ex02 timing optimization]
+)<sort-optimization>
+
+In @sort-optimization, there is a gain of 3s. But, an important augmentation of the branch misses. The rate has decreased from 33.17% (missed) to 0.08%.
+
+The same test was done with the `-01` compiler flag and there is almost no difference between the two scipts. The optimzed is around 4.12s and the basic is around 4.6s. The difference of 0.6 sec can be explained with the sort algorithm used in the optimized script, because this is the only difference.
+
+
+== Exercise 3
+
 
