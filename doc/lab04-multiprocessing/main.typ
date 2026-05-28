@@ -44,6 +44,9 @@ static void catch_signal(int signal) {
 
 }
 
+#pagebreak()
+
+```c
 static void install_catch_signal()
 {
     struct sigaction act = {
@@ -227,7 +230,11 @@ With these prerequisites met, we can create two groups, one for each instance of
 |> mkdir /sys/fs/cgroup/cpuset/low
 |> echo 1 > /sys/fs/cgroup/cpuset/low/cpuset.cpus
 |> echo 0 > /sys/fs/cgroup/cpuset/low/cpuset.mems
+```
 
+#pagebreak()
+
+```bash
 # Create and allocate CPU for program "high"
 |> mkdir /sys/fs/cgroup/cpuset/high
 |> echo 2,3 > /sys/fs/cgroup/cpuset/high/cpuset.cpus
@@ -246,7 +253,7 @@ We can then open two shells and run the test program in each of them, while addi
 As shown in @max-cpu, as expected, both processes in the "low" program are limited to #gls("cpu", long: false) core 1, while the "high" program uses #gls("cpu", long: false) cores 2 and 3 (one for each process).
 
 #figure(
-    image("max-cpu.png"),
+    image("max-cpu.png", width: 90%),
     caption: [CPU usage of the two programs with dedicated resources]
 )<max-cpu>
 
@@ -268,6 +275,6 @@ After running the test program in each shell, we can observe in @shared-cpu that
 
 
 #figure(
-    image("shared-cpu.png"),
+    image("shared-cpu.png", width: 80%),
     caption: [CPU usage of the two programs with shared resources]
 )<shared-cpu>

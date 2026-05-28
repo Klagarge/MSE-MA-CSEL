@@ -26,7 +26,7 @@ syslog(LOG_INFO, "Start logging silly led-controller"); // INFO level
 The most difficult part was understanding the #gls("gpio", long: false) mapping between the physical pins and the #gls("sysfs", long: false) #gls("gpio", long: false) numbers. This mapping can be found in the #link("https://linux-sunxi.org/GPIO", [*sunxi driver*]) documentation, which describes the driver for the #gls("gpio", long: false) controller.
 
 == Results
-We can demonstrate that the application works more efficiently than the provided silly #gls("led", long: false) controller:
+We demonstrate that the application works more efficiently than the provided silly #gls("led", long: false) controller:
 
 #table(
     columns: (1fr, 1fr),
@@ -46,4 +46,4 @@ We can demonstrate that the application works more efficiently than the provided
     ]
 )
 
-We can see the difference between @fig-silly and @fig-epoll. One utilizes 100% of a CPU core, whereas the other does not.
+We see in @fig-silly, the silly #gls("led", long: false) controller use 100% of the #gls("cpu", long: false) in @fig-epoll we save CPU resources.
