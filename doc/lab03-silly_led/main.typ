@@ -11,7 +11,7 @@ The application is based on multithreading: one thread handles the #gls("led", l
 The timer thread uses only one timer and sets the initial time on every cycle. This allows us to allocate resources only once for the timer and avoid memory fragmentation. The button thread writes the next sleep duration to a shared variable, which the timer thread reads to set its next sleep interval. Since there is only one writer for this variable, we do not need a mutex to protect it.
 
 
-All logs are written to syslog at the INFO level:
+All logs are written to #gls("syslog", long: false) at the INFO level:
 ```c
 // First, we open the syslog with a specific name and facility
 // LOG_PID to include the PID (process ID) in the logs

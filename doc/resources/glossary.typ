@@ -107,6 +107,13 @@
     group: "Operating System"
   ),
   (
+    key: "syslog",
+    short: "syslog",
+    long: "System Logging",
+    description: "A standard protocol and utility for system message logging in UNIX and Linux systems, allowing applications to log messages to files, consoles, or remote syslog daemons.",
+    group: "Operating System"
+  ),
+  (
     key: "epoll",
     short: "epoll",
     long: "Event Poll",
@@ -114,8 +121,8 @@
     group: "Operating System"
   ),
   (
-    key: "cgroups",
-    short: "cgroups",
+    key: "cgroup",
+    short: "cgroup",
     plural: "cgroups",
     long: "Control Groups",
     description: "A Linux kernel feature that limits, polices, and isolates resource usage (such as CPU, memory, and disk I/O) for groups of processes.",

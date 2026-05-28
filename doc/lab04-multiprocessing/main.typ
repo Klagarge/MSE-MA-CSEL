@@ -58,7 +58,7 @@ static void install_catch_signal()
 }
 ```
 
-One important design consideration to anticipate was signal handling behavior. If `Ctrl+C` (SIGINT) is caught but the handler does not terminate the process, the application would continue to run and block the terminal. In that case, the only way to kill the process would be to open another terminal and use a tool like `top` or `htop`.
+One important design consideration to anticipate was signal handling behaviour. If `Ctrl+C` (SIGINT) is caught, but the handler does not terminate the process, the application would continue to run and block the terminal. In that case, the only way to kill the process would be to open another terminal and use a tool like `top` or `htop`.
 
 Finally, each process is pinned to its own CPU core. This is configured using `sched_setaffinity`:
 ```c
@@ -98,18 +98,18 @@ SIGINT received
 The @multiprocessus shows the #gls("pid", long: false) and the assigned CPU core for each process, which can be compared with the console output shown above.
 The child process has PID 273 and runs on core 0, whereas the parent process has PID 274 and runs on core 1.
 
-== #gls("cgroups", long: false) memory
+== #glspl("cgroup", long: false) memory
 
-The goal of this part is to understand how to use #gls("cgroups", long: false) to limit the resources of a process. We will initially focus on memory, but #gls("cgroups", long: false) can also be used to limit #gls("cpu", long: false), #gls("io", long: false), and other resources.
+The goal of this part is to understand how to use #glspl("cgroup", long: false) to limit the resources of a process. We will initially focus on memory, but #glspl("cgroup", long: false) can also be used to limit #gls("cpu", long: false), #gls("io", long: false), and other resources.
 
-To limit the memory usage of a process, we can use the `memory` subsystem of #gls("cgroups", long: false). On this NanoPi, we use #gls("cgroups", long: false) v1.
+To limit the memory usage of a process, we can use the `memory` subsystem of #glspl("cgroup", long: false). On this NanoPi, we use #glspl("cgroup", long: false) v1.
 
-We must first mount a temporary filesystem for #gls("cgroups", long: false):
+We must first mount a temporary file system for #glspl("cgroup", long: false):
 ```bash
 |> mount -t tmpfs none /sys/fs/cgroup
 ```
 
-We can then create a directory for the memory subsystem, mount the corresponding #gls("cgroups", long: false) filesystem, and create a subdirectory for our specific group:
+We can then create a directory for the memory subsystem, mount the corresponding #glspl("cgroup", long: false) file system, and create a subdirectory for our specific group:
 
 ```bash
 # Create a directory for the memory cgroup
@@ -122,7 +122,7 @@ We can then create a directory for the memory subsystem, mount the corresponding
 |> mkdir /sys/fs/cgroup/memory/0
 ```
 
-We can then add the current process to this memory cgroup and set a memory limit of 20 #gls("mib", long: false):
+We can then add the current process to this memory #gls("cgroup", long: false) and set a memory limit of 20 #gls("mib", long: false):
 
 ```bash
 # Add the current process to the memory cgroup
@@ -148,7 +148,7 @@ for (i = 0; i < NUM_BLOCKS; i++) {
 }
 ```
 
-We can use the `cgroups.sh` script in `04-multiprocessing` to set up #gls("cgroups", long: false) and run the test program. However, to execute the script in the context of our current shell, we must source it using the `.` command:
+We can use the `cgroups.sh` script in `04-multiprocessing` to set up #glspl("cgroup", long: false) and run the test program. However, to execute the script in the context of our current shell, we must source it using the `.` command:
 
 ```bash
 |> just cgroups # Build the test program
@@ -156,20 +156,20 @@ We can use the `cgroups.sh` script in `04-multiprocessing` to set up #gls("cgrou
 |> ./cgroups # Run the test program that allocates memory in a loop
 ```
 
-=== What is the behavior of the command `echo $$ > ...` on #gls("cgroups", long: false)?
+=== What is the behaviour of the command `echo $$ > ...` on #glspl("cgroup", long: false)?
 
 The `$$` shell variable represents the #gls("pid", long: false) of the current shell. When we execute the command `echo $$ > /sys/fs/cgroup/memory/0/tasks`, we write the PID of the current shell process into the `tasks` file of the specified cgroup. This action assigns the process to that control group, meaning that any program run from this shell will inherit the resource limits and policies defined for that cgroup.
 
 
-=== What is the behavior of the memory subsystem when the memory quota is exhausted? Can we modify it? If yes, how?
+=== What is the behaviour of the memory subsystem when the memory quota is exhausted? Can we modify it? If yes, how?
 
-On this NanoPi, we use #gls("cgroups", long: false) v1, so the resource configuration is done via the `memory.limit_in_bytes` file. When a process within a cgroup exceeds the memory limit defined by this file, the Linux kernel will attempt to reclaim memory. If it cannot reclaim sufficient memory, it will invoke the #gls("oom", long: false) killer to terminate processes within that cgroup to free up memory.
+On this NanoPi, we use #glspl("cgroup", long: false) v1, so the resource configuration is done via the `memory.limit_in_bytes` file. When a process within a #gls("cgroup", long: false) exceeds the memory limit defined by this file, the Linux kernel will attempt to reclaim memory. If it cannot reclaim sufficient memory, it will invoke the #gls("oom", long: false) killer to terminate processes within that #gls("cgroup", long: false) to free up memory.
 
-It is possible to modify this behavior in several ways:
+It is possible to modify this behaviour in several ways:
 
-+ *Use "Soft Limits" (specific to #gls("cgroups", long: false) v1):*
++ *Use "Soft Limits" (specific to #glspl("cgroup", long: false) v1):*
   In addition to a hard limit (`memory.limit_in_bytes`), a soft limit can be set via `memory.soft_limit_in_bytes`.
-  *Behavior:* The kernel does not kill the process when the soft limit is exceeded, unless the entire system runs low on memory. If global memory is low, the kernel begins reclaiming memory from cgroups that exceed their soft limits.
+  *Behaviour:* The kernel does not kill the process when the soft limit is exceeded, unless the entire system runs low on memory. If global memory is low, the kernel begins reclaiming memory from cgroups that exceed their soft limits.
 
 + *Adjust the #gls("oom", long: false) Killer priority score:*
   We can specify an #gls("oom", long: false) score adjustment for the process. By modifying the `/proc/[PID]/oom_score_adj` file to the value `-1000`, the process becomes virtually immune to the #gls("oom", long: false) killer.
@@ -188,9 +188,9 @@ We can monitor the memory usage of a control group by reading directly from its 
 20971520
 ```
 
-== #gls("cgroups", long: false) CPU
+== #glspl("cgroup", long: false) CPU
 To check this part, we need a tiny program that consumes #gls("cpu", long: false) with at least two processes.
-The following program creates a child process that performs #gls("cpu", long: false)-intensive work, while the parent process also performs #gls("cpu", long: false)-intensive work. We can then use #gls("cgroups", long: false) to limit the #gls("cpu", long: false) usage of one of the processes and observe the effect.
+The following program creates a child process that performs #gls("cpu", long: false)-intensive work, while the parent process also performs #gls("cpu", long: false)-intensive work. We can then use #glspl("cgroup", long: false) to limit the #gls("cpu", long: false) usage of one of the processes and observe the effect.
 ```c
 int main() {
   pid_t pid = fork();
@@ -206,12 +206,12 @@ int main() {
 }
 ```
 
-Based on the previous exercise, we should already have mounted the #gls("cgroups", long: false) filesystem.
+Based on the previous exercise, we should already have mounted the #glspl("cgroup", long: false) file system.
 ```bash
 |>  mount -t tmpfs none /sys/fs/cgroup
 ```
 
-We can then create and mount the #gls("cgroups", long: false) filesystem for the `cpuset` subsystem:
+We can then create and mount the #glspl("cgroup", long: false) file system for the `cpuset` subsystem:
 ```bash
 # Create a directory for the cpuset cgroup
 |> mkdir /sys/fs/cgroup/cpuset
@@ -220,7 +220,7 @@ We can then create and mount the #gls("cgroups", long: false) filesystem for the
 |> mount -t cgroup -o cpu,cpuset cpuset /sys/fs/cgroup/cpuset
 ```
 
-With these prerequisites met, we can create two groups, one for each instance of our running program. Using the commands below, we assign one or more #gls("cpu", long: false) cores to each group via `cpuset.cpus`. I'm not sure about the `cpuset.mems` file, but it seems to be related to memory nodes. It's definetly a topic that should be explored more in depth, but for now, we set to `0` as specified in the lab instructions:
+With these prerequisites met, we can create two groups, one for each instance of our running program. Using the commands below, we assign one or more #gls("cpu", long: false) cores to each group via `cpuset.cpus`. I'm not sure about the `cpuset.mems` file, but it seems to be related to memory nodes. It's definitely a topic that should be explored more in depth, but for now, we set to `0` as specified in the lab instructions:
 
 ```bash
 # Create and allocate CPU for program "low"
@@ -257,7 +257,7 @@ To share resources at 75% and 25%, we can use the `cpu.shares` file in the `cpu`
 |> echo 25 > /sys/fs/cgroup/cpu/low/cpu.shares
 ```
 
-After running the test program in each shell, we can observe in @shared-cpu that the processes in the "high" cgroup are allocated 75% of the CPU capacity, while those in the "low" cgroup receive 25%:
+After running the test program in each shell, we can observe in @shared-cpu that the processes in the "high" #gls("cgroup", long: false) are allocated 75% of the CPU capacity, while those in the "low" #gls("cgroup", long: false) receive 25%:
 ```bash
 # In the first shell, add it to the "low" cgroup and run the test program
 |> . ./shared-cpu.sh low
