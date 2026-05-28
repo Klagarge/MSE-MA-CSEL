@@ -238,3 +238,34 @@ The same test was done with the `-01` compiler flag and there is almost no diffe
 == Exercise 3
 
 
+```bash
+$ perf record --call-graph dwarf -e cpu-clock -F 75 ./read-apache-logs access_log_NASA_Jul95_samples
+Couldn't synthesize bpf events.
+Processing log file access_log_NASA_Jul95_samples
+Found 14867 unique Hosts/IPs
+[ perf record: Woken up 335 times to write data ]
+[ perf record: Captured and wrote 83.687 MB perf.data (10269 samples) ]
+
+```
+
+The only line were there is a comparison of 2 element with the `==` operator is :
+```c
+bool HostCounter::isNewHost(std::string hostname)
+{
+    return std::find(myHosts.begin(), myHosts.end(), hostname) == myHosts.end();
+}
+```
+
+The program check if the host is already in the vector. It shows that this operation on `vector` is slow.
+
+```
+# time ./read-apache-logs access_log_NASA_Jul95_samples
+Processing log file access_log_NASA_Jul95_samples
+Found 14867 unique Hosts/IPs
+real	2m 15.58s
+user	2m 14.68s
+sys	0m 0.12s
+
+```
+
+This collections library need to be transform in `set` collections to be faster.
