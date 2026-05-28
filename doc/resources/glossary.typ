@@ -27,6 +27,108 @@
     description: "Rust is a modern systems programming language focused on safety, speed, and concurrency. It prevents common programming errors such as null pointer dereferencing and data races at compile time, making it a preferred choice for performance-critical applications.",
     group: "Programming Language"
   ),
+  (
+    key: "csel",
+    short: "CSEL",
+    long: "Conception de Systèmes Embarqués sous Linux",
+    description: "Embedded Linux Systems Design course at HES-SO, covering kernel development, driver programming, and system optimization.",
+    group: "Course"
+  ),
+  (
+    key: "cpu",
+    short: "CPU",
+    long: "Central Processing Unit",
+    description: "The primary component of a computer that performs most of the processing inside the computer, executing instructions of computer programs.",
+    group: "Hardware"
+  ),
+  (
+    key: "led",
+    short: "LED",
+    long: "Light Emitting Diode",
+    description: "A semiconductor light source that emits light when current flows through it.",
+    group: "Hardware"
+  ),
+  (
+    key: "gpio",
+    short: "GPIO",
+    plural: "GPIOs",
+    long: "General-Purpose Input/Output",
+    description: "Uncommitted digital signal pins on an integrated circuit or electronic circuit board whose behavior can be programmed as input or output at runtime.",
+    group: "Hardware"
+  ),
+  (
+    key: "pid",
+    short: "PID",
+    plural: "PIDs",
+    long: "Process Identifier",
+    description: "A unique number assigned by the operating system kernel to identify an active process.",
+    group: "Operating System"
+  ),
+  (
+    key: "gpu",
+    short: "GPU",
+    long: "Graphics Processing Unit",
+    description: "A specialized electronic circuit designed to accelerate graphics rendering and parallel computing tasks.",
+    group: "Hardware"
+  ),
+  (
+    key: "cuda",
+    short: "CUDA",
+    long: "Compute Unified Device Architecture",
+    description: "A parallel computing platform and application programming interface model created by NVIDIA.",
+    group: "Programming API"
+  ),
+  (
+    key: "openmp",
+    short: "OpenMP",
+    long: "Open Multi-Processing",
+    description: "An application programming interface that supports multi-platform shared-memory multiprocessing programming.",
+    group: "Programming API"
+  ),
+  (
+    key: "io",
+    short: "I/O",
+    long: "Input/Output",
+    description: "The communication between an information processing system (such as a computer) and the outside world.",
+    group: "Computer Science"
+  ),
+  (
+    key: "oom",
+    short: "OOM",
+    long: "Out of Memory",
+    description: "A state of computer operation where no additional memory can be allocated, often leading to the invocation of an OOM killer to terminate processes.",
+    group: "Operating System"
+  ),
+  (
+    key: "sysfs",
+    short: "sysfs",
+    long: "System Filesystem",
+    description: "A virtual pseudo-filesystem provided by the Linux kernel that exports information about hardware, device drivers, and kernel subsystems to user space.",
+    group: "Operating System"
+  ),
+  (
+    key: "epoll",
+    short: "epoll",
+    long: "Event Poll",
+    description: "A scalable Linux I/O event notification facility designed to monitor multiple file descriptors with high efficiency.",
+    group: "Operating System"
+  ),
+  (
+    key: "cgroups",
+    short: "cgroups",
+    plural: "cgroups",
+    long: "Control Groups",
+    description: "A Linux kernel feature that limits, polices, and isolates resource usage (such as CPU, memory, and disk I/O) for groups of processes.",
+    group: "Operating System"
+  ),
+  (
+    key: "mib",
+    short: "MiB",
+    plural: "MiBs",
+    long: "Mebibyte",
+    description: "A unit of digital information equal to 1,048,576 bytes (2^20 bytes).",
+    group: "Computer Science"
+  ),
 )
 
 
@@ -54,6 +156,7 @@
       show-all: false,
       // disable the back ref at the end of the descriptions
       disable-back-references: false,
+      shorthands: ("plural", "capitalize", "capitalize-plural", "short", "long"),
     )
   ]}
 ]}

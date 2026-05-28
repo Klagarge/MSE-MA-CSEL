@@ -4,7 +4,7 @@
 
 == Process, signals, and communication
 
-The aim of this laboratory is to create a child process from the parent with `fork()`. Then, each processus executes the same code until they are killed. This happens the same when programming GPU with CUDA or OpenMP. The different processus are differenciated by the PID (Process ID).
+The aim of this laboratory is to create a child process from the parent with `fork()`. Then, each processus executes the same code until they are killed. This happens the same when programming #gls("gpu", long: false) with #gls("cuda", long: false) or #gls("openmp", long: false). The different processus are differenciated by the #gls("pid", long: false).
 
 The child must communicate with the parents  with a `socketpair`:
 ```c
@@ -95,21 +95,21 @@ SIGINT received
 )<multiprocessus>
 
 
-The @multiprocessus shows the PID and the core of the processus and they can be compared to the output of the executable before. 
-The child processus has the PID 273 and the core 0. The parent processus has th PID 274 and the core 1.
+The @multiprocessus shows the #gls("pid", long: false) and the core of the processus and they can be compared to the output of the executable before.
+The child processus has the #gls("pid", long: false) 273 and the core 0. The parent processus has the #gls("pid", long: false) 274 and the core 1.
 
-== CGroups memory
+== #gls("cgroups", long: false) memory
 
-The goal of this part is to understand how to use cgroups to limit the resources of a process. We will initially focus on memory, but cgroups can also be used to limit CPU, I/O, and other ressources.
+The goal of this part is to understand how to use #gls("cgroups", long: false) to limit the resources of a process. We will initially focus on memory, but #gls("cgroups", long: false) can also be used to limit #gls("cpu", long: false), #gls("io", long: false), and other ressources.
 
-For limit the memory usage of a process, we cans use the `memory` subsystem of cgroups. We use cgroup v1 with our Nanopi.
+For limit the memory usage of a process, we cans use the `memory` subsystem of #gls("cgroups", long: false). We use #gls("cgroups", long: false) v1 with our Nanopi.
 
-We must first mount a temporary filesystem for cgroups:
+We must first mount a temporary filesystem for #gls("cgroups", long: false):
 ```bash
 |> mount -t tmpfs none /sys/fs/cgroup
 ```
 
-We can the create a directory for the memory cgroup, mount the cgroup filesystem with memory, and create a subdirectory for our cgroup:
+We can the create a directory for the memory #gls("cgroups", long: false), mount the #gls("cgroups", long: false) filesystem with memory, and create a subdirectory for our #gls("cgroups", long: false):
 
 ```bash
 # Create a directory for the memory cgroup
@@ -122,7 +122,7 @@ We can the create a directory for the memory cgroup, mount the cgroup filesystem
 |> mkdir /sys/fs/cgroup/memory/0
 ```
 
-We can then add the current process to this memory cgroups and set a memory limit of 20 MiB:
+We can then add the current process to this memory #gls("cgroups", long: false) and set a memory limit of 20 #gls("mib", long: false):
 
 ```bash
 # Add the current process to the memory cgroup
@@ -148,7 +148,7 @@ for (i = 0; i < NUM_BLOCKS; i++) {
 }
 ```
 
-We can use the `cgroups.sh` script in `04-multiprocessing` to set up the cgroup and run the test program, but we need to run with the actual context, so we need to execute the script with `.`:
+We can use the `cgroups.sh` script in `04-multiprocessing` to set up the #gls("cgroups", long: false) and run the test program, but we need to run with the actual context, so we need to execute the script with `.`:
 
 ```bash
 |> just cgroups # Build the test program
@@ -156,27 +156,27 @@ We can use the `cgroups.sh` script in `04-multiprocessing` to set up the cgroup 
 |> ./cgroups # Run the test program that allocates memory in a loop
 ```
 
-=== What is the behavior of the command `echo $$ > ...` on cgroups?
+=== What is the behavior of the command `echo $$ > ...` on #gls("cgroups", long: false)?
 
-The `$$` represent the current process ID (PID). When we execute the command `echo $$ > /sys/fs/cgroup/memory/0/tasks`, we are writing the PID of the current process into the `tasks` file of the specified cgroup. This action effectively assigns the process to that cgroup, meaning that it will now be subject to the resource limits and policies defined for that cgroup.
+The `$$` represent the current #gls("pid", long: false). When we execute the command `echo $$ > /sys/fs/cgroup/memory/0/tasks`, we are writing the #gls("pid", long: false) of the current process into the `tasks` file of the specified #gls("cgroups", long: false). This action effectively assigns the process to that #gls("cgroups", long: false), meaning that it will now be subject to the resource limits and policies defined for that #gls("cgroups", long: false).
 
 
 === What is the behavior of the memory subsystem when the memory quota is exhausted? Can we modify it? If yes, how?
 
-For this nanopi, we use cgroup v1, so the relevant file is `memory.limit_in_bytes`. When a process within a cgroup exceeds the memory limit defined by `memory.limit_in_bytes`, the Linux kernel will attempt to reclaim memory. If it cannot reclaim enough memory, it will invoke the Out Of Memory (OOM) killer to terminate processes within that cgroup to free up memory.
+For this nanopi, we use #gls("cgroups", long: false) v1, so the relevant file is `memory.limit_in_bytes`. When a process within a #gls("cgroups", long: false) exceeds the memory limit defined by `memory.limit_in_bytes`, the Linux kernel will attempt to reclaim memory. If it cannot reclaim enough memory, it will invoke the #gls("oom", long: false) killer to terminate processes within that #gls("cgroups", long: false) to free up memory.
 
 It's possible to modify this behavior in several ways:
 
-+ Use "Soft Limits" (Specific to cgroup v1)
++ Use "Soft Limits" (Specific to #gls("cgroups", long: false) v1)
   In addition to a hard limit (`memory.limit_in_bytes`), you can set a soft limit (`memory.soft_limit_in_bytes`).
   *Behavior:* The kernel will not kill the process if the soft limit is exceeded, unless the entire system is low on global memory. If global memory is low, the kernel will start reclaiming memory from groups that exceed their soft limit.
 
-+ Adjust the OOM Killer Priority Score
-  If we specify an OOM score adjustement for the process. By modifying the file `/proc/[PID]/oom_score_adj` with the value `-1000`, we can make the process almost "immune" to the OOM Killer.
++ Adjust the #gls("oom", long: false) Killer Priority Score
+  If we specify an #gls("oom", long: false) score adjustement for the process. By modifying the file `/proc/[PID]/oom_score_adj` with the value `-1000`, we can make the process almost "immune" to the #gls("oom", long: false) Killer.
 
 === How to watch the memory usage?
 
-We can monitor the memory usage of a cgroup by reading it directly from the file in the specific cgroups:
+We can monitor the memory usage of a #gls("cgroups", long: false) by reading it directly from the file in the specific #gls("cgroups", long: false):
 
 ```bash
 # Current memory usage in bytes
@@ -188,9 +188,9 @@ We can monitor the memory usage of a cgroup by reading it directly from the file
 20971520
 ```
 
-== CGroups CPU
-To check this part, we need a tiny program that consumes CPU with at least two process.
-The following program creates a child process that performs CPU intensive work, while the parent process also performs CPU intensive work. We can then use cgroups to limit the CPU usage of one of the processes and observe the effect.
+== #gls("cgroups", long: false) CPU
+To check this part, we need a tiny program that consumes #gls("cpu", long: false) with at least two process.
+The following program creates a child process that performs #gls("cpu", long: false) intensive work, while the parent process also performs #gls("cpu", long: false) intensive work. We can then use #gls("cgroups", long: false) to limit the #gls("cpu", long: false) usage of one of the processes and observe the effect.
 ```c
 int main() {
   pid_t pid = fork();
@@ -206,12 +206,12 @@ int main() {
 }
 ```
 
-Based on previous exercice, we should already have mounted the cgroup filesystem.
+Based on previous exercice, we should already have mounted the #gls("cgroups", long: false) filesystem.
 ```bash
 |>  mount -t tmpfs none /sys/fs/cgroup
 ```
 
-We can then create and mount the cgroup filesystem for the `cpuset` subsystem
+We can then create and mount the #gls("cgroups", long: false) filesystem for the `cpuset` subsystem
 ```bash
 # Create a directory for the cpuset cgroup
 |> mkdir /sys/fs/cgroup/cpuset
@@ -220,7 +220,7 @@ We can then create and mount the cgroup filesystem for the `cpuset` subsystem
 |> mount -t cgroup -o cpu,cpuset cpuset /sys/fs/cgroup/cpuset
 ```
 
-Now we had the prerequirements, we can create 2 groupes. One for each of our running programme. With the following command, we attribute on ore more CPU to each group (`cpuset.cpus`). I'm not sure about the `cpuset.mems` file, but it seems to be related to memory nodes. It's definetly a topic that should be explored more in depth, but for now, we set to `0` as specified in the lab instructions.
+Now we had the prerequirements, we can create 2 groupes. One for each of our running programme. With the following command, we attribute one or more #gls("cpu", long: false) to each group (`cpuset.cpus`). I'm not sure about the `cpuset.mems` file, but it seems to be related to memory nodes. It's definetly a topic that should be explored more in depth, but for now, we set to `0` as specified in the lab instructions.
 
 ```bash
 # Create and allocate CPU for programme "low"
@@ -234,7 +234,7 @@ Now we had the prerequirements, we can create 2 groupes. One for each of our run
 |> echo 0 > /sys/fs/cgroup/cpuset/high/cpuset.mems
 ```
 
-We can then open 2 shells and run the test program in each of them, while adding the programme to the corresponding cgroup:
+We can then open 2 shells and run the test program in each of them, while adding the programme to the corresponding #gls("cgroups", long: false):
 ```bash
 # In the first shell, add it on the "low" cgroup and run the test program
 |> . ./max-cpu.sh low
@@ -243,7 +243,7 @@ We can then open 2 shells and run the test program in each of them, while adding
 |> . ./max-cpu.sh high
 ```
 
-We see on @max-cpu that as expected, both process in program _low_ is limited to CPU 1, while the programm _high_ is using CPU 2 and 3, one for each process.
+We see on @max-cpu that as expected, both process in program _low_ is limited to #gls("cpu", long: false) 1, while the programm _high_ is using #gls("cpu", long: false) 2 and 3, one for each process.
 
 #figure(
     image("max-cpu.png"),
@@ -257,7 +257,7 @@ To share resources at 75% and 25%, we can use the `cpu.shares` file in the `cpu`
 |> echo 25 > /sys/fs/cgroup/cpu/low/cpu.shares
 ```
 
-Then running the test program in each shell, we see on @shared-cpu that the _high_ process is limited to 75% of the CPU, while the _low_ process is limited to 25%.
+Then running the test program in each shell, we see on @shared-cpu that the _high_ process is limited to 75% of the #gls("cpu", long: false), while the _low_ process is limited to 25%.
 ```bash
 # In the first shell, add it on the "low" cgroup and run the test program
 |> . ./shared-cpu.sh low

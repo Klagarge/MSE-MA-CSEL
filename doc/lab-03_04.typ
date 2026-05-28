@@ -35,6 +35,7 @@
   date: date,
   tableof: tableof,
 )
+#show link: set text(fill: blue.darken(60%))
 #v(5em)
 #infobox()[
   The repository for this labs can be found at the following address:
@@ -45,14 +46,11 @@
 
 //-------------------------------------
 // Content
-// 
+//
 
 #include "lab03-silly_led/main.typ"
 #include "lab04-multiprocessing/main.typ"
 #include "lab05-optimization/main.typ"
-
-
-//--------------------------------------
 
 
 //-------------------------------------
