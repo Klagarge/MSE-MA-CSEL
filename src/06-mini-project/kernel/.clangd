@@ -1,0 +1,33 @@
+CompileFlags:
+    Add:
+        # Architecture and cross-compilation
+        - "--target=aarch64-linux-gnu"
+
+        # Exclude standard library
+        - "-nostdinc"
+
+        # Mandatory kernel definitions
+        - "-D__KERNEL__"
+        - "-DMODULE"
+        - "-DCONFIG_CC_HAS_K_CONSTRAINT=1"
+
+        # Force-included files
+        - "-include"
+        - "/buildroot/output/build/linux-5.15.148/include/linux/compiler-version.h"
+        - "-include"
+        - "/buildroot/output/build/linux-5.15.148/include/linux/kconfig.h"
+        - "-include"
+        - "/buildroot/output/build/linux-5.15.148/include/linux/compiler_types.h"
+
+        # Kernel include paths
+        - "-I/buildroot/output/build/linux-5.15.148/arch/arm64/include"
+        - "-I/buildroot/output/build/linux-5.15.148/arch/arm64/include/generated"
+        - "-I/buildroot/output/build/linux-5.15.148/include"
+        - "-I/buildroot/output/build/linux-5.15.148/arch/arm64/include/uapi"
+        - "-I/buildroot/output/build/linux-5.15.148/arch/arm64/include/generated/uapi"
+        - "-I/buildroot/output/build/linux-5.15.148/include/uapi"
+        - "-I/buildroot/output/build/linux-5.15.148/include/generated/uapi"
+
+        # GCC compiler system include path
+        - "-isystem"
+        - "/buildroot/output/host/lib/gcc/aarch64-buildroot-linux-gnu/11.3.0/include"
