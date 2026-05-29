@@ -14,7 +14,6 @@ RUN apt-get update && \
     device-tree-compiler \
     file \
     flex \
-    just \
     libfl-dev \
     libglib2.0-dev \
     libssl-dev \
@@ -27,6 +26,8 @@ RUN apt-get update && \
     u-boot-tools \
     wget \
     bear
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
 
 COPY scripts/* /usr/local/bin/
 RUN chmod +x /usr/local/bin/*
