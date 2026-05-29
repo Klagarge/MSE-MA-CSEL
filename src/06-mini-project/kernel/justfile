@@ -1,0 +1,11 @@
+@default:
+    just --list
+
+@build:
+    make
+
+@install:
+    make install
+
+@clean:
+  make clean

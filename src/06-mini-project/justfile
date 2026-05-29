@@ -1,10 +1,13 @@
+mod kernel
+
 @default:
   just --list
 
 @build:
-    make
+  just kernel::build
 
 @clean:
-    rm -rf build
-    rm -rf .obj
-    rm -f -- mini-project
+  just kernel::clean
+  rm -rf build
+  rm -rf .obj
+  rm -f -- mini-project
