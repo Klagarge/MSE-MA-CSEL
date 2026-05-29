@@ -1,0 +1,10 @@
+@default:
+  just --list
+
+@build:
+    make
+
+@clean:
+    rm -rf build
+    rm -rf .obj
+    rm -f -- mini-project
