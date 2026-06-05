@@ -11,13 +11,11 @@ SOURCE := main
 ifneq ($(KERNELRELEASE),)
 obj-m += $(MODULE).o		## name of the generated module
 
-# add folder sources
-SOURCES_C := $(wildcard $(src)/*.c)
-# add temperature sources
-SOURCES_C += $(wildcard $(src)/temperature/*.c)
+SUBDIR_SRCS := $(shell find $(src) -mindepth 2 -type f -name '*.c')
+SUBDIR_OBJS := $(patsubst $(src)/%.c,%.o,$(SUBDIR_SRCS))
 
+$(MODULE)-objs := $(SOURCE).o $(SUBDIR_OBJS)
 
-$(MODULE)-objs := $(patsubst $(src)/%.c, %.o, $(SOURCES_C))
 
 # $(MODULE)-objs := $(SOURCE).o	## list of objects needed for that module
 CFLAGS_$(SOURCE).o := -DDEBUG
