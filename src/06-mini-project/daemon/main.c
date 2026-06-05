@@ -35,83 +35,21 @@ typedef struct {
     int epoll_fd;
 } ThreadData;
 
-// constant
-const char* GPIO_BTN[NBR_BTN] = {GPIO_BTN1, GPIO_BTN2, GPIO_BTN3};
-const char* BTN[NBR_BTN] =  {BTN1, BTN2, BTN3};
+ThreadData data;
 
+void period_inc() {
+    data.flash_period_ms += 100;
+    printf("period_inc: flash_period_ms=%ld\n", data.flash_period_ms);
+}
 
-void* btn_thread(void* arg) {
-    ThreadData* data = (ThreadData*)arg;
+void period_dec() {
+    data.flash_period_ms -= 100;
+    printf("period_dec: flash_period_ms=%ld\n", data.flash_period_ms);
+}
 
-    btn_init(BTN_INCREASE);
-    btn_init(BTN_DECREASE);
-    btn_init(BTN_MODE);
-
-
-    // Dummy read to clear initial state before waiting
-    char buf[2];
-    for(int i=0; i<NBR_BTN; i++) {
-        pread(btn[i], buf, sizeof(buf), 0);
-    }
-
-    printf("Waiting for button presses...\n");
-
-    // Event main loop
-    while (1) {
-        struct epoll_event events[NBR_BTN];
-
-        // Timeout is -1: Block infinitely until an event occurs!
-        int n = epoll_wait(epfd, events, 1, -1);
-
-        if (n < 0) {
-            perror("epoll_wait error");
-            break;
-        }
-
-        for (int i = 0; i < n; i++) {
-            // read btn file
-            pread(events[i].data.fd, buf, sizeof(buf), 0);
-
-            if (events[i].data.fd == btn[0]) {
-                if (buf[0] == '1') {
-                    data->flash_period_ms += 200;
-                    char* log_msg = malloc(100);
-                    snprintf(log_msg, 100, "Increase flash period to %ld ms", data->flash_period_ms);
-                    syslog(LOG_INFO, "%s", log_msg);
-                    printf("%s\n", log_msg);
-                    free(log_msg);
-                }
-
-            } else if (events[i].data.fd == btn[1]) {
-                if (buf[0] == '1') {
-                    data->flash_period_ms = DEFAULT_TIME_MS;
-                    char* log_msg = malloc(100);
-                    snprintf(log_msg, 100, "Reset flash period to %ld ms", data->flash_period_ms);
-                    syslog(LOG_INFO, "%s", log_msg);
-                    printf("%s\n", log_msg);
-                    free(log_msg);
-                }
-
-            } else if (events[i].data.fd == btn[2]) {
-                if (buf[0] == '1') {
-                    data->flash_period_ms -= 200;
-                    if (data->flash_period_ms <= 0) {
-                        data->flash_period_ms = 200; // Minimum period of 200ms
-                    }
-                    char* log_msg = malloc(100);
-                    snprintf(log_msg, 100, "Decrease flash period to %ld ms", data->flash_period_ms);
-                    syslog(LOG_INFO, "%s", log_msg);
-                    printf("%s\n", log_msg);
-                    free(log_msg);
-                }
-            }
-        }
-    }
-
-    for (int i=0; i<NBR_BTN; i++) {
-        close(btn[i]);
-    }
-    close(epfd);
+void period_reset() {
+    data.flash_period_ms = DEFAULT_TIME_MS;
+    printf("period_reset: flash_period_ms=%ld\n", data.flash_period_ms);
 }
 
 static void* timer_thread(void* arg) {
@@ -162,7 +100,6 @@ static void* timer_thread(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
-    ThreadData data;
     pthread_t thread;
     openlog("CSEL Logs", LOG_PID, LOG_USER);
     syslog(LOG_INFO, "Start logging silly led-controller");
@@ -182,16 +119,19 @@ int main(int argc, char* argv[]) {
 
     timer_link_to_epoll(&data.timer_fd, &data.epoll_fd);
 
+    btn_t* btn_inc = btn_init(BTN_INCREASE);
+    btn_t* btn_dec = btn_init(BTN_DECREASE);
+    btn_t* btn_mode = btn_init(BTN_MODE);
+
+    btn_set_callback(btn_inc, period_inc);
+    btn_set_callback(btn_dec, period_dec);
+    btn_set_callback(btn_mode, period_reset);
+
 
     if (pthread_create(&thread, NULL, timer_thread, &data) != 0) {
         perror("Failed to create timer thread");
         exit(30);
     }
-
-
-    // Setup button thread
-    pthread_t btn_thread_inst;
-    pthread_create(&btn_thread_inst, NULL, btn_thread, &data);
 
     while (1) {
         sleep(1);

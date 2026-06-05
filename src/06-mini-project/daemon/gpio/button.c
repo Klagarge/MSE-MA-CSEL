@@ -15,14 +15,15 @@
 #define GPIO_UNEXPORT "/sys/class/gpio/unexport"
 #define GPIO_BTN_BASE "/sys/class/gpio/gpio"
 
-#define MAX_EVENTS 10
-atomic_int ev_tail = 0;
+#define MAX_BTN 10
+btn_t* btn_list[MAX_BTN];
 
 int epoll_fd;
-struct epoll_event ev[MAX_EVENTS];
+struct epoll_event ev[MAX_BTN];
+atomic_int btn_tail = 0;
 pthread_t epoll_thread_id;
 
-int btn_add_epoll_event(btn_t* btn);
+void btn_add_epoll_event(btn_t* btn, int tail);
 void epoll_init();
 static void* epoll_thread(void* arg);
 
@@ -31,29 +32,28 @@ btn_t* btn_init(btn_type_t type) {
     if (btn == NULL) return NULL;
 
     char gpio_path[32] = GPIO_BTN_BASE;
-    char pin[32];
     switch (type) {
         case BTN_INCREASE:
-            strcpy(pin, GPIO_BTN_INCREASE);
+            strcpy(btn->pin, GPIO_BTN_INCREASE);
             break;
         case BTN_DECREASE:
-            strcpy(pin, GPIO_BTN_DECREASE);
+            strcpy(btn->pin, GPIO_BTN_DECREASE);
             break;
         case BTN_MODE:
-            strcpy(pin, GPIO_BTN_MODE);
+            strcpy(btn->pin, GPIO_BTN_MODE);
             break;
         default:
             printf("Invalid button type\n");
             return NULL;
     }
-    strcat(gpio_path, pin);
+    strcat(gpio_path, btn->pin);
 
     int f = open(GPIO_UNEXPORT, O_WRONLY);
-    write(f, pin, strlen(pin));
+    write(f, btn->pin, strlen(btn->pin));
     close(f);
 
     f = open(GPIO_EXPORT, O_WRONLY);
-    write(f, pin, strlen(pin));
+    write(f, btn->pin, strlen(btn->pin));
     close(f);
 
     char direction_path[100];
@@ -78,16 +78,26 @@ btn_t* btn_init(btn_type_t type) {
 
     f = open(value_path, O_RDONLY);
     if (f == -1) {
-        printf("Failed to setup button on pin %s\n", pin);
+        printf("Failed to setup button on pin %s\n", btn->pin);
         return NULL;
     }
-    btn->gpio = f;
+    btn->fd = f;
 
     // Dummy read to clear initial state before waiting
     char buf[2];
-    pread(btn->gpio, buf, sizeof(buf), 0);
+    pread(btn->fd, buf, sizeof(buf), 0);
 
-    btn_add_epoll_event(btn);
+    int tail = atomic_fetch_add(&btn_tail, 1);
+    if (tail >= MAX_BTN) {
+        perror("Failed to add epoll event");
+        exit(EXIT_FAILURE);
+    }
+
+    btn_list[tail] = btn;
+    if (tail == 0) {
+        epoll_init();
+    }
+    btn_add_epoll_event(btn, tail);
 
     return btn;
 }
@@ -97,38 +107,21 @@ void btn_set_callback(btn_t* btn, btn_callback_t callback) {
 }
 
 // TODO add mutex to protect this function
-int btn_add_epoll_event(btn_t* btn) {
-    int tail = atomic_fetch_add(&ev_tail, 1);
-    if (tail >= MAX_EVENTS-1) {
-        perror("Failed to add epoll event");
-        return -1;
-    }
-
-    if (tail == 0) {
-        epoll_init();
-    }
+void btn_add_epoll_event(btn_t* btn, int tail) {
 
     // EPOLLIN is working well as EPOLLPRI (which is more used for priority data)
     // EPOLLERR is used to detect if there is an error
     // EPOLLET is for edge triggered mode (non-blocking)
     ev[tail].events = EPOLLIN | EPOLLERR | EPOLLET;
-    ev[tail].data.fd = btn->gpio;
-    int ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, btn->gpio, &ev[tail]);
+    ev[tail].data.fd = btn->fd;
+
+    int ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, btn->fd, &ev[tail]);
     if (ret < 0) {
         perror("Failed to add epoll event");
-        return -1;
     }
-    return tail;
 }
 
 void epoll_init(){
-    if (pthread_create(&epoll_thread_id, NULL, epoll_thread, NULL) != 0) {
-        perror("Failed to create timer thread");
-        exit(30);
-    }
-}
-
-static void* epoll_thread(void* arg) {
     int epfd = epoll_create1(0);
     if (epfd < 0) {
         perror("Failed to create epoll instance");
@@ -136,15 +129,44 @@ static void* epoll_thread(void* arg) {
     }
     epoll_fd = epfd;
 
+    if (pthread_create(&epoll_thread_id, NULL, epoll_thread, NULL) != 0) {
+        perror("Failed to create timer thread");
+        exit(30);
+    }
+}
+
+static void* epoll_thread(void* arg) {
     while (1) {
-        struct epoll_event events[MAX_EVENTS];
-        int n = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        struct epoll_event events[MAX_BTN];
+        int n = epoll_wait(epoll_fd, events, MAX_BTN, -1);
         if (n < 0) {
             perror("epoll_wait");
             continue;
         }
         for (int i = 0; i < n; i++) {
-
+            char buf[2];
+            int fd = events[i].data.fd;
+            int tail = -1;
+            btn_t* btn = NULL;
+            for (int j = 0; j < MAX_BTN; j++) {
+                if (btn_list[j] == NULL) continue;
+                if (btn_list[j]->fd == fd) {
+                    tail = j;
+                    btn = btn_list[j];
+                    break;
+                }
+            }
+            if (tail == -1) {
+                printf("No button found for fd %d\n", fd);
+                continue;
+            }
+            pread(btn->fd, buf, sizeof(buf), 0);
+            if (buf[0] == '1') {
+                printf("Button %s pressed\n", btn->pin);
+                if (btn->callback != NULL) {
+                    btn->callback();
+                }
+            }
         }
     }
 }

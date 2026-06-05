@@ -14,7 +14,8 @@ typedef enum {
 typedef void (*btn_callback_t)();
 
 typedef struct {
-    int gpio;
+    int fd;
+    char pin[32];
     btn_callback_t callback;
 } btn_t;
 
