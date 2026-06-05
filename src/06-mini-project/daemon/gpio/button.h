@@ -1,9 +1,9 @@
 #ifndef BUTTON_H
 #define BUTTON_H
 
-#define GPIO_BTN_INCREASE "0"
-#define GPIO_BTN_DECREASE "2"
-#define GPIO_BTN_MODE "3"
+#define GPIO_BTN_INCREASE "3"
+#define GPIO_BTN_DECREASE "0"
+#define GPIO_BTN_MODE "2"
 
 typedef enum {
     BTN_INCREASE,
