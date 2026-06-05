@@ -9,7 +9,7 @@
 
 /* Internal state of the regulator */
 static int current_mode = 1;        /* 1 = Auto, 0 = Manual */
-static uint32_t current_period = 2;   /* Current blinking period in ms */
+static uint32_t current_period = 1000;   /* Current blinking period in ms */
 
 static struct task_struct *regulator_thread = NULL;
 
