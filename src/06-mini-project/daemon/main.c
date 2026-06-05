@@ -14,13 +14,7 @@
 #include "gpio/led.h"
 #include "gpio/button.h"
 
-/*
- * status led - gpioa.10 --> gpio10
- * power led  - gpiol.10 --> gpio362
- */
 
-#define GPIO_LED       "/sys/class/gpio/gpio10"
-#define LED            "10"
 
 #define GPIO_BTN1      "/sys/class/gpio/gpio0"
 #define BTN1           "0"
@@ -49,33 +43,10 @@ const char* BTN[NBR_BTN] =  {BTN1, BTN2, BTN3};
 void* btn_thread(void* arg) {
     ThreadData* data = (ThreadData*)arg;
 
-    // Open all button with the right flags
-    int btn[NBR_BTN] = {0};
-    for(int i=0; i<NBR_BTN; i++) {
-        btn[i] = btn_open(GPIO_BTN[i], BTN[i]);
-        if (btn[i] < 0) {
-            perror("Failed to open button");
-        }
-    }
+    btn_init(BTN_INCREASE);
+    btn_init(BTN_DECREASE);
+    btn_init(BTN_MODE);
 
-    // Create epoll instance to control all button files
-    int epfd = epoll_create1(0);
-    if (epfd < 0) {
-        perror("Failed to create epoll");
-    }
-
-    // Add buttons to epoll
-    struct epoll_event ev[NBR_BTN];
-    // EPOLLIN is working well as EPOLLPRI (which is more used for priority data)
-    // EPOLLERR is used to detect if there is an error
-    // EPOLLET is for edge triggered mode (non-blocking)
-    for(int i=0; i<NBR_BTN; i++) {
-        ev[i].events = EPOLLIN | EPOLLERR | EPOLLET;
-        ev[i].data.fd = btn[i];
-        if (epoll_ctl(epfd, EPOLL_CTL_ADD, btn[i], &ev[i]) < 0) {
-            perror("Failed to add button to epoll");
-        }
-    }
 
     // Dummy read to clear initial state before waiting
     char buf[2];
@@ -141,13 +112,12 @@ void* btn_thread(void* arg) {
         close(btn[i]);
     }
     close(epfd);
-    return NULL;
 }
 
 static void* timer_thread(void* arg) {
     ThreadData* data = (ThreadData*)arg;
 
-    int led = led_open(GPIO_LED, LED);
+    led_t* led = led_init(LED_POWER);
     led_off(led);
 
 
@@ -175,11 +145,13 @@ static void* timer_thread(void* arg) {
         int delay = 0;
         if (isLedOn == 0) {
             delay = time_on_ms; // 2% duty
-            led_on(led);
+            // led_on(led);
+            led_toggle(led);
             isLedOn = 1;
         } else {
             delay = time_off_ms; // rest of the period
-            led_off(led);
+            // led_off(led);
+            led_toggle(led);
             isLedOn = 0;
         }
 
@@ -190,8 +162,6 @@ static void* timer_thread(void* arg) {
 }
 
 int main(int argc, char* argv[]) {
-    (void)argc;
-    (void)argv;
     ThreadData data;
     pthread_t thread;
     openlog("CSEL Logs", LOG_PID, LOG_USER);

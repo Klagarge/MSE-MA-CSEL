@@ -8,8 +8,33 @@
 #include <sys/epoll.h>
 #include <sys/inotify.h>
 #include <pthread.h>
+#include <stdio.h>
 
-int led_open(const char* gpio_path, const char* pin) {
+#define GPIO_EXPORT     "/sys/class/gpio/export"
+#define GPIO_UNEXPORT   "/sys/class/gpio/unexport"
+#define GPIO_LED_BASE   "/sys/class/gpio/gpio"
+
+#include <stdlib.h>
+
+led_t* led_init(led_type_t type) {
+    led_t* led = malloc(sizeof(led_t));
+    if (led == NULL) return NULL;
+
+    // Concatenate GPIO LED path based on type
+    char gpio_path[32] = GPIO_LED_BASE;
+    char pin[32];
+    switch (type) {
+        case LED_STATUS:
+            strcpy(pin, GPIO_LED_STATUS);
+            break;
+        case LED_POWER:
+            strcpy(pin, GPIO_LED_POWER);
+            break;
+        default:
+            printf("Invalid LED type\n");
+            return NULL;
+    }
+    strcat(gpio_path, pin);
 
     // unexport pin out of sysfs (reinitialization)
     int f = open(GPIO_UNEXPORT, O_WRONLY);
@@ -36,13 +61,38 @@ int led_open(const char* gpio_path, const char* pin) {
     strcat(value_path, "/value");
 
     f = open(value_path, O_RDWR);
-    return f;
+    if (f == -1) {
+        printf("Failed to setup led on pin %s\n", pin);
+        return NULL;
+    }
+
+    led->gpio = f;
+    return led;
 }
 
-void led_on(int led) {
-    pwrite(led, "1", sizeof("1"), 0);
+void led_on(led_t* led) {
+    if (led == NULL) {
+        return;
+    }
+    pwrite(led->gpio, "1", sizeof("1"), 0);
 }
 
-void led_off(int led) {
-    pwrite(led, "0", sizeof("0"), 0);
+void led_off(led_t* led) {
+    if (led == NULL) {
+        return;
+    }
+    pwrite(led->gpio, "0", sizeof("0"), 0);
+}
+
+void led_toggle(led_t* led) {
+    if (led == NULL) {
+        return;
+    }
+    char value[2];
+    pread(led->gpio, value, sizeof(value), 0);
+    if (value[0] == '0') {
+        led_on(led);
+    } else {
+        led_off(led);
+    }
 }
