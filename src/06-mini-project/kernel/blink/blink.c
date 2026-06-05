@@ -45,7 +45,7 @@ int thread_blinkThread(void* data) {
 
     bool state = false;
     int period = 0;
-    
+
     pr_info("Blink started\n");
 
     while (!kthread_should_stop()) {
@@ -58,7 +58,7 @@ int thread_blinkThread(void* data) {
     return 0;
 }
 
-void adjust_frequency(int new_period_ms) {
+void adjust_period(int new_period_ms) {
     pr_info("Adjusting blink period to %d ms\n", new_period_ms);
     atomic_set(&blink_period_ms, new_period_ms);
 }

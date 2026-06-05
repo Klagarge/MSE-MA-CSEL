@@ -15,10 +15,10 @@
 #define DEFAULT_PERIOD_MS 1000
 
 /**
- * Allow to set a new frequency for the blinky led
+ * Allow to set a new period for the blinky led
  * @param new_period_ms The new period in ms for the blinky led
  */
-void adjust_frequency(int new_period_ms);
+void adjust_period(int new_period_ms);
 
 void blink_init(void);
 void blink_exit(void);
