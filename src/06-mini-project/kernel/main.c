@@ -16,11 +16,16 @@ static int __init temp_regulator_init(void) {
     int ret;
 
     /* Initialize temperature sensor API */
-       ret = temp_init();
-       if (ret != 0) {
-           pr_err("temp_regulator: Initialization failed with error %d\n", ret);
-           return ret;
-       }
+    ret = temp_init();
+    if (ret != 0) {
+        pr_err("temp_regulator: Initialization failed with error %d\n", ret);
+        return ret;
+    }
+
+    uint32_t temp = read_temp();
+    pr_info("temp_regulator: Temperature=%u.%03u C\n",
+            temp / 1000,
+            temp % 1000);
 
     pr_info("Linux module temp_regulator loaded\n");
     return 0;
