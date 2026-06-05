@@ -9,28 +9,18 @@
 #include <sys/inotify.h>
 #include <pthread.h>
 #include <syslog.h>
+#include <stdatomic.h>
 
 #include "timer/timer.h"
 #include "gpio/led.h"
 #include "gpio/button.h"
-
-
-
-#define GPIO_BTN1      "/sys/class/gpio/gpio0"
-#define BTN1           "0"
-#define GPIO_BTN2      "/sys/class/gpio/gpio2"
-#define BTN2           "2"
-#define GPIO_BTN3      "/sys/class/gpio/gpio3"
-#define BTN3           "3"
-
-#define NBR_BTN 3
 
 #define DEFAULT_TIME_MS 1000
 #define DUTY_CYCLE_PERCENT 2
 
 
 typedef struct {
-    long flash_period_ms;
+    atomic_int flash_period_ms;
     int timer_fd;
     int epoll_fd;
 } ThreadData;
@@ -38,18 +28,18 @@ typedef struct {
 ThreadData data;
 
 void period_inc() {
-    data.flash_period_ms += 100;
-    printf("period_inc: flash_period_ms=%ld\n", data.flash_period_ms);
+    int period = atomic_fetch_add(&data.flash_period_ms, 100);
+    printf("period_inc: flash_period_ms=%d\n", period + 100);
 }
 
 void period_dec() {
-    data.flash_period_ms -= 100;
-    printf("period_dec: flash_period_ms=%ld\n", data.flash_period_ms);
+    int period = atomic_fetch_sub(&data.flash_period_ms, 100);
+    printf("period_dec: flash_period_ms=%d\n", period - 100);
 }
 
 void period_reset() {
-    data.flash_period_ms = DEFAULT_TIME_MS;
-    printf("period_reset: flash_period_ms=%ld\n", data.flash_period_ms);
+    atomic_store(&data.flash_period_ms, DEFAULT_TIME_MS);
+    printf("period_reset: flash_period_ms=%d\n", DEFAULT_TIME_MS);
 }
 
 static void* timer_thread(void* arg) {
@@ -57,8 +47,6 @@ static void* timer_thread(void* arg) {
 
     led_t* led = led_init(LED_POWER);
     led_off(led);
-
-
 
     struct epoll_event ev;
 
@@ -77,19 +65,19 @@ static void* timer_thread(void* arg) {
             break;
         }
 
-        long time_on_ms = data->flash_period_ms / 100 * DUTY_CYCLE_PERCENT; // 2% duty
-        long time_off_ms = data->flash_period_ms - time_on_ms; // rest of the period
+        int period = atomic_load(&data->flash_period_ms);
+
+        long time_on_ms = period / 100 * DUTY_CYCLE_PERCENT; // 2% duty
+        long time_off_ms = period - time_on_ms; // rest of the period
 
         int delay = 0;
         if (isLedOn == 0) {
             delay = time_on_ms; // 2% duty
-            // led_on(led);
-            led_toggle(led);
+            led_on(led);
             isLedOn = 1;
         } else {
             delay = time_off_ms; // rest of the period
-            // led_off(led);
-            led_toggle(led);
+            led_off(led);
             isLedOn = 0;
         }
 
@@ -101,22 +89,19 @@ static void* timer_thread(void* arg) {
 
 int main(int argc, char* argv[]) {
     pthread_t thread;
-    openlog("CSEL Logs", LOG_PID, LOG_USER);
-    syslog(LOG_INFO, "Start logging silly led-controller");
 
-    data.flash_period_ms = DEFAULT_TIME_MS;
+    atomic_store(&data.flash_period_ms, DEFAULT_TIME_MS);
 
     // Create timerfd
     data.timer_fd = timer_create_empty();
     timer_set_time(&data.timer_fd, data.flash_period_ms);
 
-    // Create epoll instance
+    // Create epoll instance for the timer
     data.epoll_fd = epoll_create1(0);
     if (data.epoll_fd == -1) {
         perror("ERROR while create epoll");
         exit(20);
     }
-
     timer_link_to_epoll(&data.timer_fd, &data.epoll_fd);
 
     btn_t* btn_inc = btn_init(BTN_INCREASE);

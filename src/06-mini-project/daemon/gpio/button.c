@@ -136,6 +136,7 @@ void epoll_init(){
 }
 
 static void* epoll_thread(void* arg) {
+    (void) arg;
     while (1) {
         struct epoll_event events[MAX_BTN];
         int n = epoll_wait(epoll_fd, events, MAX_BTN, -1);
@@ -162,11 +163,12 @@ static void* epoll_thread(void* arg) {
             }
             pread(btn->fd, buf, sizeof(buf), 0);
             if (buf[0] == '1') {
-                printf("Button %s pressed\n", btn->pin);
+                // printf("Button %s pressed\n", btn->pin);
                 if (btn->callback != NULL) {
                     btn->callback();
                 }
             }
         }
     }
+    return NULL;
 }
