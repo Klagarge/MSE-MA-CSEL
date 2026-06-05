@@ -1,0 +1,9 @@
+@default:
+    just --list
+
+@build:
+    make
+
+@clean:
+    make clean
+    rm -f -- daemon

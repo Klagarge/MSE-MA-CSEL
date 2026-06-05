@@ -1,13 +1,16 @@
 mod kernel
+mod daemon
 
 @default:
   just --list
 
 @build:
   just kernel::build
+  just daemon::build
 
 @clean:
   just kernel::clean
+  just daemon::clean
   rm -rf build
   rm -rf .obj
   rm -f -- mini-project

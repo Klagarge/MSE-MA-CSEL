@@ -5,3 +5,5 @@
 *.mod.o
 *.ko.cmd
 *.mod.cmd
+
+daemon/daemon
