@@ -20,7 +20,8 @@ STRIP=$(TOOLCHAIN)strip
 OBJDIR=.obj/$(target)
 OBJS= $(addprefix $(OBJDIR)/, $(SRCS:.c=.o))
 
-$(OBJDIR)/%o: %c
+$(OBJDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $< -o $@
 
 all: $(OBJDIR)/ $(EXEC)
