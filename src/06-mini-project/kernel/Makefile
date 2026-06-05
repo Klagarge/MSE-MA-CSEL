@@ -11,7 +11,15 @@ SOURCE := main
 ifneq ($(KERNELRELEASE),)
 obj-m += $(MODULE).o		## name of the generated module
 
-$(MODULE)-objs := $(SOURCE).o	## list of objects needed for that module
+# add folder sources
+SOURCES_C := $(wildcard $(src)/*.c)
+# add temperature sources
+SOURCES_C += $(wildcard $(src)/temperature/*.c)
+
+
+$(MODULE)-objs := $(patsubst $(src)/%.c, %.o, $(SOURCES_C))
+
+# $(MODULE)-objs := $(SOURCE).o	## list of objects needed for that module
 CFLAGS_$(SOURCE).o := -DDEBUG
 
 # Part executed when called from standard make in module source directory:
@@ -28,7 +36,6 @@ clean:
 
 install:
 	$(MAKE) -C $(KDIR) M=$(PWD) INSTALL_MOD_PATH=$(MODPATH) modules_install
-	install -D -m 0644 $(MODULE).conf $(MODPATH)/etc/modprobe.d/$(MODULE).conf
+	# install -D -m 0644 $(MODULE).conf $(MODPATH)/etc/modprobe.d/$(MODULE).conf
 
 endif
-
