@@ -1,3 +1,6 @@
+#ifndef BLINK_H
+#define BLINK_H
+
 #include <linux/module.h>	// needed by all modules
 #include <linux/init.h>		// needed for macros
 #include <linux/kernel.h>	// needed for debugging
@@ -22,3 +25,5 @@ void adjust_period(int new_period_ms);
 
 void blink_init(void);
 void blink_exit(void);
+
+#endif /* BLINK_H */
