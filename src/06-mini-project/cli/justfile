@@ -1,0 +1,14 @@
+@default:
+    just --list
+
+@build:
+    make
+
+@install: build
+    install -d /rootfs/usr/bin
+    install -m 0755 mp /rootfs/usr/bin/mp
+    echo "temp_cli installed successfully in /rootfs/usr/bin/"
+
+@clean:
+    make clean
+    rm -f -- mp
