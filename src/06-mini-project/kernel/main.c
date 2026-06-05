@@ -10,22 +10,6 @@
 
 #include "temperature/temp.h"
 
-static struct task_struct *temp_thread = NULL;
-
-/* Thread function that runs in the background */
-static int temp_thread_fn(void *data) {
-    pr_info("temp_regulator: Background thread started\n");
-
-    while (!kthread_should_stop()) {
-        read_temp();
-        /* Wait 1 second (1000 milliseconds) */
-        msleep(1000);
-    }
-
-    pr_info("temp_regulator: Background thread stopping\n");
-    return 0;
-}
-
 static int __init temp_regulator_init(void) {
     pr_info("Linux module temp_regulator loading...\n");
 
