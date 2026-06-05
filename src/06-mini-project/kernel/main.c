@@ -7,6 +7,8 @@
 
 #include "temperature/temp.h"
 #include "blink/blink.h"
+#include "regulator/regulator.h"
+
 
 static int __init temp_regulator_init(void) {
     pr_info("Linux module temp_regulator loading...\n");
@@ -20,16 +22,22 @@ static int __init temp_regulator_init(void) {
         return ret;
     }
 
-    uint32_t temp = read_temp();
-    pr_info("temp_regulator: Temperature=%u.%03u C\n",
-            temp / 1000,
-            temp % 1000);
-
     blink_init();
-    ssleep(5);
-    adjust_frequency(500);
-    ssleep(5);
-    adjust_frequency(5000);
+
+
+    struct regulator_callbacks cbs = {
+        .adjust_period = adjust_period,
+        .get_temperature = read_temp,
+    };
+
+    ret = regulator_init(&cbs);
+    if (ret != 0) {
+        pr_err("temp_regulator: Regulator initialization failed: %d\n", ret);
+        blink_exit();
+        temp_exit();
+        return ret;
+    }
+
 
     pr_info("Linux module temp_regulator loaded\n");
     return 0;
@@ -38,10 +46,12 @@ static int __init temp_regulator_init(void) {
 static void __exit temp_regulator_exit(void) {
     pr_info("Linux module temp_regulator unloading...\n");
 
+    /* Stop the brain logic */
+    regulator_exit();
 
-    /* Release sensor resources */
-    temp_exit();
+    /* Release hardware resources */
     blink_exit();
+    temp_exit();
 
     pr_info("Linux module temp_regulator unloaded\n");
 }
