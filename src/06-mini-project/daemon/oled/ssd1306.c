@@ -14,11 +14,11 @@
 
 #define ARRAY_OF(x) (sizeof(x)/sizeof(x[0]))
 
-#define I2C_BUS                 "/dev/i2c-0"
-#define OLED_ADDR               0x3c	
+#define I2C_BUS                 "/dev/i2c-1"
+#define OLED_ADDR               0x3c
 #define OLED_COMMAND_MODE       0x00
-#define OLED_DATA_MODE          0x40 
-#define OLED_DISPLAY_OFF_CMD    0xae 
+#define OLED_DATA_MODE          0x40
+#define OLED_DISPLAY_OFF_CMD    0xae
 #define OLED_DISPLAY_ON_CMD     0xaf
 
 static const uint8_t font[][8] = {
@@ -163,7 +163,7 @@ static void send_command(uint8_t cmd)
     }
 }
 
-void send_data(uint8_t byte) 
+void send_data(uint8_t byte)
 {
     uint8_t buf[2] = {
         [0] = OLED_DATA_MODE,
@@ -181,7 +181,7 @@ void ssd1306_set_position (uint32_t column, uint32_t row)
     send_command(0x10 + ((8*column>>4)&0x0f));  //set column higher address
 }
 
-void ssd1306_putc(char c) 
+void ssd1306_putc(char c)
 {
 	if ((c<32) || (c>127))      // Ignore non-printable ASCII characters
 		c=' ';
@@ -193,7 +193,7 @@ void ssd1306_putc(char c)
     }
 }
 
-void ssd1306_puts(const char* str) 
+void ssd1306_puts(const char* str)
 {
     while (*str != 0)
         ssd1306_putc(*str++);
@@ -203,7 +203,7 @@ void ssd1306_clear_display()
 {
 	send_command(OLED_DISPLAY_OFF_CMD);//   display off
 	for (int j=0; j<8; j++) {
-		ssd1306_set_position(0,j); 
+		ssd1306_set_position(0,j);
 		for (int i=0; i<16; i++)  //clear all columns
 			ssd1306_putc(' ');
     }
@@ -218,7 +218,7 @@ int ssd1306_init()
 		printf("ERROR: unable to open i2c bus interface (%s)\n", I2C_BUS);
 		return -1;
 	}
-	if (ioctl(fd, I2C_SLAVE, OLED_ADDR) < 0) { 
+	if (ioctl(fd, I2C_SLAVE, OLED_ADDR) < 0) {
 		printf("ERROR: unable to access OLED as slave\n");
 		return -1;
 	}
@@ -231,6 +231,3 @@ int ssd1306_init()
 
 	return 0;
 }
-
-
-
