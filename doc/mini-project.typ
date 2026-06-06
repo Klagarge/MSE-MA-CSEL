@@ -73,16 +73,40 @@ Finally, a tiny CLI is implemented to control the daemon trought the @ipc interf
 - everything is linked on regulator and main
 === blink
 === temperature
+
+The read of temperature is done through de register. It implements the fonction to calculate the temperature from the register. It changes the formula when the temperature is over 70°C as specified in the datasheet.
+
 === sysfs
+
+It uses some callbacks for every actions in the module:
+- read temperature
+- set and get mode
+- set period
+- get period
+
+We seperates the setter and the getter of the period to avoid some issue. Because if we set a wrong value or in automatic mode, the value would be wrong for getting it. In the way we did it, the read value will be the current.
 
 == Daemon
 === gpio
 - issue devicetree and solution
 === ipc
+
+The ipc provides a server to handle messages from other processus with a socketpair. All is defined in a common file: `src/06-mini-project/common/common_ipc.h`. This file implements the action and the format of the message through the socket. 
+
 === oled
 === application
 
+This part is the core of the daemon and provides API for the oled screen, the buttons and the ipc to set and get values from the module. It uses sysfs technology to communicate with the kernel.
+
+It implements some specific action like increase and decrease the period of the led. It provides too specifics functions for the buttons, because it has to signal with the power led when it is pushed. We called that an animation. There is a thread which counts how many times the buttons are pushed and make an short animation. 
+
+
+
 == CLI
+
+The cli is connected to the daemon through the socketpair define in the `common` as the ipc. It uses the same struct and actions for changing mode or set, increase, decrease a period.
+
+It is installed in the `/usr/bin` by the `justfile`. It allows to use it from everywhere in the terminal. It can be use as a tool.
 
 = Future work
 
