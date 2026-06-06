@@ -48,11 +48,11 @@ static int process_arguments(int argc, char *argv[], ipc_msg_t *msg) {
             return EXIT_FAILURE;
         }
     }
-    else if (strcmp(argv[1], INC) == 0 && argc == 2) {
+    else if (strcmp(argv[1], DEC) == 0 && argc == 2) {
         msg->command = CMD_INC_PERIOD;
         msg->value = 0; /* Ignored by daemon */
     }
-    else if (strcmp(argv[1], DEC) == 0 && argc == 2) {
+    else if (strcmp(argv[1], INC) == 0 && argc == 2) {
         msg->command = CMD_DEC_PERIOD;
         msg->value = 0; /* Ignored by daemon */
     }
