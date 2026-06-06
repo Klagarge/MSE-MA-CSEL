@@ -78,8 +78,7 @@ Finally, a tiny CLI is implemented to control the daemon trought the @ipc interf
 In our architecture,  we manage to separate with callback our fonctionnalities. Then, we use threads for multiprocessing which involve to implements some atomic operations, signals and mutex. We add socketpair and sysfs for communication. Finally, we get some informations through registers.
 
 == Kernel
-
-The kernel provide a control on the period of the led, the mode and provide the temperature through sysfs.
+The kernel part is separated in three main part: the blink, the temperature and the sysfs. All this part are initialize in the main but handle in a regulator that build the logic of the auto/man mode. I auto mode, the regulator sets the frequency according to the temperature. The regulator also handle the sysfs for setting the mode and the frequency in case of the manual mode. 
 
 === blink
 The `blink.c` and `blink.h` files implement the part that control the status led. It's a kernel module, so we have an init and an exit function. The init function create a kernel thread that blink to a specific frequency. The exit function stop this thread. The period is stored in a global `atomic_t` variable, so it can be safely set with the `adjust_period` function. 
