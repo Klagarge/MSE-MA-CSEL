@@ -3,15 +3,17 @@
 
 #include "../../common/common_ipc.h"
 
+#include <stdint.h>
+
 /*
  * Structure holding the callbacks for IPC commands.
  * Each function pointer will be called when the corresponding command is received.
  */
 struct ipc_callbacks_t {
     void (*on_set_mode)(int mode);
-    void (*on_set_frequency)(int freq);
-    void (*on_inc_frequency)(void);
-    void (*on_dec_frequency)(void);
+    void (*on_set_period)(uint32_t period_ms);
+    void (*on_inc_period)(void);
+    void (*on_dec_period)(void);
 } ;
 
 /**
