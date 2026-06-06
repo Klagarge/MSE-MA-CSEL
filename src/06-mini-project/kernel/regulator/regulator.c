@@ -125,9 +125,6 @@ int regulator_init(struct regulator_callbacks *cbs) {
         return PTR_ERR(regulator_thread);
     }
 
-    /* Set initial hardware state */
-    regulator_cbs.adjust_period(current_period);
-
     return 0;
 }
 
