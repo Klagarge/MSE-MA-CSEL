@@ -12,7 +12,7 @@ struct sysfs_callbacks {
     void (*set_mode)(int mode);
 
     uint32_t (*get_period)(void);
-    void (*set_period)(uint32_t freq);
+    void (*set_period)(uint32_t period_ms);
 };
 
 /* Register the callbacks and create the sysfs interface */
