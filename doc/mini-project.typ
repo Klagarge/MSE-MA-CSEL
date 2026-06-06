@@ -44,13 +44,51 @@
 
 //-------------------------------------
 // Content
-// 
+//
+#let general-architecture = [
+  #figure(
+    image("mini-project/deployement.png", width: 100%),
+    caption: "General architecture"
+  ) <fig:general-architecture>
+]
 
-= Mini-Project
 
-#lorem(150)
+= Introduction
 
-#lorem(50)
+The purpose of this mini-project is to train different concept we saw during the semester.
+We simulate a fan controlled by the temperatur of the @cpu. To simulate this fan, we blink the status led.
+The @fig:general-architecture shows the general architecture of the project.
+
+This led and the measure of the temperature is managed by a kernel module. This module support an automatic and manual mode. In the automatic mode, the blinking frequency is automatically adjusted according to the temperature. We can switch this mode by a sysfs entry. In the manual mode, we can set the blinking frequency by writing in another sysfs entry. The sysfs also provide an entry to read the current temperature and blinking frequency.
+
+Another part in this mini-project is to create a deamon in user-space to control manually the fan. The button are read by the deamon to increase and decrease the blinking frequency in manual mode. The deamon also display the current temperature and blinking frequency on an oled screen. The daemon can also be controller by a @ipc interface. 
+
+Finally, a tiny CLI is implemented to control the daemon trought the @ipc interface.
+
+= Architecture
+
+#general-architecture
+
+== Kernel
+- everything is linked on regulator and main
+=== blink
+=== temperature
+=== sysfs
+
+== Daemon
+=== gpio
+- issue devicetree and solution
+=== ipc
+=== oled
+=== application
+
+== CLI
+
+= Future work
+
+= Conclusion
+Fun, but not enough time for more over-engineering.
+
 
 
 //-------------------------------------
@@ -58,4 +96,3 @@
 //
 #heading(numbering:none, outlined: false)[] <sec:end>
 #make_glossary(gloss:gloss, title:i18n("gloss-title"))
-

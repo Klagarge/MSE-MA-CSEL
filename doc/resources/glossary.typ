@@ -187,6 +187,13 @@
     description: "A unit of digital information equal to 1,048,576 bytes (2^20 bytes).",
     group: "Computer Science"
   ),
+  (
+    key: "ipc",
+    short: "IPC",
+    long: "Inter-Process Communication",
+    description: "A set of programming interfaces that allow processes to communicate with each other and synchronize their actions.",
+    group: "Operating System"
+  )
 )
 
 
