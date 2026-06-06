@@ -65,13 +65,15 @@ Another part in this mini-project is to create a deamon in user-space to control
 
 Finally, a tiny CLI is implemented to control the daemon trought the @ipc interface.
 
+#general-architecture
+
 = Architecture
 
-#general-architecture
 
 == Kernel
 - everything is linked on regulator and main
 === blink
+The `blink.c` and `blink.h` files implement the part that control the status led. It's a kernel module, so we have an init and an exit function. The init function create a kernel thread that blink to a specific frequency. The exit function stop this thread. The period is stored in a global `atomic_t` variable, so it can be safely set with the `adjust_period` function. 
 === temperature
 
 The read of temperature is done through de register. It implements the fonction to calculate the temperature from the register. It changes the formula when the temperature is over 70°C as specified in the datasheet.
@@ -88,12 +90,25 @@ We seperates the setter and the getter of the period to avoid some issue. Becaus
 
 == Daemon
 === gpio
-- issue devicetree and solution
+Overcomplicated solution, have fun for understanding my messy code. 
 === ipc
 
 The ipc provides a server to handle messages from other processus with a socketpair. All is defined in a common file: `src/06-mini-project/common/common_ipc.h`. This file implements the action and the format of the message through the socket. 
 
 === oled
+The oled part have nothing special, we basically use the provided example. But we had to modify the devicetree to add the i2c that control the screen. It was the first time we had to modify the buildroot part. We forgot a bit how it's absolutely not enough to modify in `/config/board/.../nanopi-neo-plus2.dts`. In the `get-buildroot.sh` script, their is a rsync command that was done only at the full beginning of the semester when we initialize everything. To effectively modify the devicetree, we had to copy our modification, then rebuild (it's short because most parts are already built): 
+
+```bash
+rsync -a /workspace/config/board/ /buildroot/board/
+rsync -a /workspace/config/configs/ /buildroot/configs/
+cd /buildroot
+make linux-rebuild
+make uboot-rebuild
+make
+```
+
+Then, if we boot with @tftp, we can simply reboot. Otherwise, we have to reflash the sd card with the new image. 
+
 === application
 
 This part is the core of the daemon and provides API for the oled screen, the buttons and the ipc to set and get values from the module. It uses sysfs technology to communicate with the kernel.
@@ -109,6 +124,9 @@ The cli is connected to the daemon through the socketpair define in the `common`
 It is installed in the `/usr/bin` by the `justfile`. It allows to use it from everywhere in the terminal. It can be use as a tool.
 
 = Future work
+#let link-github-project = "https://github.com/users/Klagarge/projects/3/views/1?filterQuery=is%3Aopen"
+C.f.: #link(link-github-project)[Github project] #footnote(link-github-project)
+
 
 = Conclusion
 Fun, but not enough time for more over-engineering.

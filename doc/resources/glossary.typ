@@ -193,6 +193,13 @@
     long: "Inter-Process Communication",
     description: "A set of programming interfaces that allow processes to communicate with each other and synchronize their actions.",
     group: "Operating System"
+  ),
+  (
+    key: "tftp",
+    short: "TFTP",
+    long: "Trivial File Transfer Protocol",
+    description: "A simple protocol for transferring files, typically used for booting devices over a network.",
+    group: "Networking"
   )
 )
 
