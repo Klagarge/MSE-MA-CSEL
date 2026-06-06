@@ -14,8 +14,8 @@
 #include <linux/atomic.h>
 
 
-#define GPIO_PIN 10
-#define DEFAULT_PERIOD_MS 1000
+static const int GPIO_PIN = 10;
+static const int DEFAULT_PERIOD_MS = 1000;
 
 /**
  * Allow to set a new period for the blinky led
