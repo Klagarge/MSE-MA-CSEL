@@ -35,9 +35,9 @@ int main(void) {
     btn_set_callback(btn_mode, mode_toggle);
 
     struct ipc_callbacks_t ipc_cbs = {
-        .on_dec_frequency = decrease_period,
-        .on_inc_frequency = increase_period,
-        // .on_set_frequency = set_period,
+        .on_dec_period = decrease_period,
+        .on_inc_period = increase_period,
+        .on_set_period = set_period,
         .on_set_mode = set_mode,
     };
 

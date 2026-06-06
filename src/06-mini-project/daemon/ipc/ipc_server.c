@@ -21,25 +21,25 @@ static void process_message(ipc_msg_t *msg) {
     switch (msg->command) {
         case CMD_SET_MODE:
             if (current_cbs.on_set_mode) {
-                current_cbs.on_set_mode(msg->value);
+                current_cbs.on_set_mode((int) msg->value);
             }
             break;
 
-        case CMD_SET_FREQ:
-            if (current_cbs.on_set_frequency) {
-                current_cbs.on_set_frequency(msg->value);
+        case CMD_SET_PERIOD:
+            if (current_cbs.on_set_period) {
+                current_cbs.on_set_period((uint32_t) msg->value);
             }
             break;
 
-        case CMD_INC_FREQ:
-            if (current_cbs.on_inc_frequency) {
-                current_cbs.on_inc_frequency();
+        case CMD_INC_PERIOD:
+            if (current_cbs.on_inc_period) {
+                current_cbs.on_inc_period();
             }
             break;
 
-        case CMD_DEC_FREQ:
-            if (current_cbs.on_dec_frequency) {
-                current_cbs.on_dec_frequency();
+        case CMD_DEC_PERIOD:
+            if (current_cbs.on_dec_period) {
+                current_cbs.on_dec_period();
             }
             break;
 
