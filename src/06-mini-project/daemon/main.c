@@ -14,38 +14,12 @@
 #include "gpio/led.h"
 #include "gpio/button.h"
 #include "ipc/ipc_server.h"
+#include "oled/oled.h"
+#include "application/app.h"
 
 #define DEFAULT_TIME_MS 1000
 #define DUTY_CYCLE_PERCENT 2
 
-void set_mode(int mode) {
-    printf("set_mode: %d\n", mode);
-}
-
-void set_period(int period) {
-    printf("set_period: %d\n", period);
-}
-
-uint32_t get_period() {
-    printf("get_period\n");
-    return 200;
-}
-
-void period_inc() {
-    printf("period_inc\n");
-}
-
-void period_dec() {
-    printf("period_dec\n");
-}
-
-void period_reset() {
-    printf("period_reset\n");
-}
-
-void get_temp() {
-    printf("get_temp\n");
-}
 
 int main(void) {
 
@@ -56,15 +30,21 @@ int main(void) {
 
     led_t* led_power = led_init(LED_POWER);
 
-    btn_set_callback(btn_inc, period_inc);
-    btn_set_callback(btn_dec, period_dec);
-    btn_set_callback(btn_mode, period_reset);
+    btn_set_callback(btn_inc, btn_decrease_period);
+    btn_set_callback(btn_dec, btn_decrease_period);
+    btn_set_callback(btn_mode, set_mode);
 
     struct ipc_callbacks_t ipc_cbs = {
-        .on_dec_frequency = period_dec,
-        .on_inc_frequency = period_inc,
-        .on_set_frequency = set_period,
+        .on_dec_frequency = decrease_period,
+        .on_inc_frequency = increase_period,
+        // .on_set_frequency = set_period,
         .on_set_mode = set_mode,
+    };
+
+    struct oled_callbacks_t oled_cbs = {
+        .get_mode = get_mode,
+        .get_period = get_period,
+        .get_temperature = get_temperature,
     };
 
     int ret = start_ipc_server(&ipc_cbs);
@@ -72,6 +52,11 @@ int main(void) {
         fprintf(stderr, "Failed to start IPC server: %d\n", ret);
         return 1;
     }
+
+    init_oled(&oled_cbs);
+
+    btn_set_led(led_power);
+    init_animations();
 
     while (1) {
         sleep(1);

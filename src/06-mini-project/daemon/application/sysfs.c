@@ -5,7 +5,7 @@
 
 
 
-float get_temperature() {
+float sysfs_get_temperature() {
     FILE *f = fopen(PATH_TEMPERATURE, "r");
     if (f == NULL) {
         return 0.0f; /* Return 0.0 if the kernel module is not loaded */
@@ -26,7 +26,7 @@ float get_temperature() {
     return 0.0f;
 }
 
-uint32_t get_mode() {
+uint32_t sysfs_get_mode() {
     FILE *f = fopen(PATH_MODE, "r");
     if (f == NULL) return 0;
 
@@ -37,7 +37,7 @@ uint32_t get_mode() {
     return mode;
 }
 
-void set_mode(uint32_t mode) {
+void sysfs_set_mode(uint32_t mode) {
     FILE *f = fopen(PATH_MODE, "w");
     if (f == NULL) return;
 
@@ -46,7 +46,7 @@ void set_mode(uint32_t mode) {
     fclose(f);
 }
 
-uint32_t get_period() {
+uint32_t sysfs_get_period() {
     FILE *f = fopen(PATH_PERIOD_ST, "r");
     if (f == NULL) return 0;
 
@@ -57,7 +57,7 @@ uint32_t get_period() {
     return period;
 }
 
-void set_period(uint32_t period) {
+void sysfs_set_period(uint32_t period) {
     FILE *f = fopen(PATH_PERIOD_SET, "w");
     if (f == NULL) return;
 

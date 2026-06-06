@@ -10,11 +10,11 @@
 #define PATH_PERIOD_ST   SYSFS_BASE_PATH "/period_status"
 #define PATH_PERIOD_SET  SYSFS_BASE_PATH "/period_set"
 
-float get_temperature();
-uint32_t get_mode();
-void set_mode(uint32_t mode);
-uint32_t get_period();
-void set_period(uint32_t period);
+float sysfs_get_temperature();
+uint32_t sysfs_get_mode();
+void sysfs_set_mode(uint32_t mode);
+uint32_t sysfs_get_period();
+void sysfs_set_period(uint32_t period);
 
 
 #endif /* SYSFS_H */

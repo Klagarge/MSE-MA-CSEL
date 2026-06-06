@@ -26,26 +26,26 @@ static void display(int mode, float temp, uint32_t period_ms) {
     /* Static header rows */
     ssd1306_set_position(0, 0);
     ssd1306_puts("CSEL1a - SP.07");
-    ssd1306_set_position(0, 1);
-    ssd1306_puts("  WATCHDOG CPU ");
-    ssd1306_set_position(0, 2);
-    ssd1306_puts("--------------");
+    // ssd1306_set_position(0, 1);
+    // ssd1306_puts("  WATCHDOG CPU ");
+    // ssd1306_set_position(0, 2);
+    // ssd1306_puts("--------------");
 
-    /* Mode display: switches between AUTO and MANU strings */
-    ssd1306_set_position(0, 3);
-    snprintf(buffer, sizeof(buffer), "Mode: %s", mode ? "AUTO" : "MANU");
-    ssd1306_puts(buffer);
+    // /* Mode display: switches between AUTO and MANU strings */
+    // ssd1306_set_position(0, 3);
+    // snprintf(buffer, sizeof(buffer), "Mode: %s", mode ? "AUTO" : "MANU");
+    // ssd1306_puts(buffer);
 
-    /* Temperature display: formatted with one decimal precision */
-    ssd1306_set_position(0, 4);
-    snprintf(buffer, sizeof(buffer), "Temp: %.1f'C", temp);
-    ssd1306_puts(buffer);
+    // /* Temperature display: formatted with one decimal precision */
+    // ssd1306_set_position(0, 4);
+    // snprintf(buffer, sizeof(buffer), "Temp: %.1f'C", temp);
+    // ssd1306_puts(buffer);
 
-    /* Period/Frequency display: shows the value in milliseconds */
-    ssd1306_set_position(0, 5);
-    float freq = 1.0f / (period_ms / 1000.0f);
-    snprintf(buffer, sizeof(buffer), "Freq: %.1fHz", freq);
-    ssd1306_puts(buffer);
+    // /* Period/Frequency display: shows the value in milliseconds */
+    // ssd1306_set_position(0, 5);
+    // float freq = 1.0f / (period_ms / 1000.0f);
+    // snprintf(buffer, sizeof(buffer), "Freq: %.1fHz", freq);
+    // ssd1306_puts(buffer);
 }
 
 /**
@@ -65,7 +65,7 @@ static void *update_oled_thread(void* arg) {
             );
         }
         /* Sleep to control refresh rate and save CPU cycles */
-        usleep(250000);
+        usleep(1000000);
     }
     return NULL;
 }
