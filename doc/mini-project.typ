@@ -69,9 +69,12 @@ Finally, a tiny CLI is implemented to control the daemon trought the @ipc interf
 
 = Architecture
 
+In our architecture,  we manage to separate with callback our fonctionnalities. Then, we use threads for multiprocessing which involve to implements some atomic operations, signals and mutex. We add socketpair and sysfs for communication. Finally, we get some informations through registers.
 
 == Kernel
-- everything is linked on regulator and main
+
+The kernel provide a control on the period of the led, the mode and provide the temperature through sysfs.
+
 === blink
 The `blink.c` and `blink.h` files implement the part that control the status led. It's a kernel module, so we have an init and an exit function. The init function create a kernel thread that blink to a specific frequency. The exit function stop this thread. The period is stored in a global `atomic_t` variable, so it can be safely set with the `adjust_period` function. 
 === temperature
@@ -93,7 +96,7 @@ We seperates the setter and the getter of the period to avoid some issue. Becaus
 Overcomplicated solution, have fun for understanding my messy code. 
 === ipc
 
-The ipc provides a server to handle messages from other processus with a socketpair. All is defined in a common file: `src/06-mini-project/common/common_ipc.h`. This file implements the action and the format of the message through the socket. 
+The @ipc provides a server to handle messages from other processus with a socketpair. All is defined in a common file: `src/06-mini-project/common/common_ipc.h`. This file implements the action and the format of the message through the socket. 
 
 === oled
 The oled part have nothing special, we basically use the provided example. But we had to modify the devicetree to add the i2c that control the screen. It was the first time we had to modify the buildroot part. We forgot a bit how it's absolutely not enough to modify in `/config/board/.../nanopi-neo-plus2.dts`. In the `get-buildroot.sh` script, their is a rsync command that was done only at the full beginning of the semester when we initialize everything. To effectively modify the devicetree, we had to copy our modification, then rebuild (it's short because most parts are already built): 
@@ -113,13 +116,15 @@ Then, if we boot with @tftp, we can simply reboot. Otherwise, we have to reflash
 
 This part is the core of the daemon and provides API for the oled screen, the buttons and the ipc to set and get values from the module. It uses sysfs technology to communicate with the kernel.
 
-It implements some specific action like increase and decrease the period of the led. It provides too specifics functions for the buttons, because it has to signal with the power led when it is pushed. We called that an animation. There is a thread which counts how many times the buttons are pushed and make an short animation. 
+It implements some specific action like increase and decrease the period of the led. It provides too specifics functions for the buttons, because it has to signal with the power led when it is pushed. We called that an animation. 
+
+This animation is managed by a signal and a condition. The function increase and decrease for the buttons increment a counter and send a signal to the animation thread. It handles it and make the animation until the counter reach 0. Then it waits with the `pthread_cond_wait`.
 
 
 
 == CLI
 
-The cli is connected to the daemon through the socketpair define in the `common` as the ipc. It uses the same struct and actions for changing mode or set, increase, decrease a period.
+The cli is connected to the daemon through the socketpair define in the `common` as the @ipc. It uses the same struct and actions for changing mode or set, increase, decrease a period.
 
 It is installed in the `/usr/bin` by the `justfile`. It allows to use it from everywhere in the terminal. It can be use as a tool.
 
