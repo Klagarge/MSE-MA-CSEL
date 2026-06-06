@@ -37,12 +37,17 @@ static uint32_t cb_get_period(void) {
     return current_period;
 }
 
-static void cb_set_period(uint32_t freq) {
+static void cb_set_period(uint32_t period_ms) {
     /* Allow period changes only in Manual mode */
     if (current_mode == 0) {
-        current_period = freq;
-        regulator_cbs.adjust_period(current_period);
-        pr_info("regulator: Manual period set to %u ms\n", current_period);
+        if (period_ms > 0) {
+            current_period = period_ms;
+            regulator_cbs.adjust_period(current_period);
+            pr_info("regulator: Manual period set to %u ms\n", current_period);
+        } else {
+            pr_warn("regulator: Period must be greater than 0\n");
+        }
+
     } else {
         pr_warn("regulator: Cannot set period manually in auto mode\n");
     }
