@@ -14,7 +14,7 @@
 
 #define ARRAY_OF(x) (sizeof(x)/sizeof(x[0]))
 
-#define I2C_BUS                 "/dev/i2c-1"
+#define I2C_BUS                 "/dev/i2c-0"
 #define OLED_ADDR               0x3c
 #define OLED_COMMAND_MODE       0x00
 #define OLED_DATA_MODE          0x40
