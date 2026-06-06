@@ -44,7 +44,11 @@ static void display(int mode, float temp, uint32_t period_ms) {
     /* Period/Frequency display: shows the value in milliseconds */
     ssd1306_set_position(0, 5);
     float freq = 1.0f / (period_ms / 1000.0f);
-    snprintf(buffer, sizeof(buffer), "Freq: %.1fHz", freq);
+    snprintf(buffer, sizeof(buffer), "Freq: %.2fHz  ", freq);
+    ssd1306_puts(buffer);
+
+    ssd1306_set_position(0, 6);
+    snprintf(buffer, sizeof(buffer), "Period: %dms  ", period_ms);
     ssd1306_puts(buffer);
 }
 
