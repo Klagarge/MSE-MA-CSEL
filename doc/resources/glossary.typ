@@ -200,6 +200,33 @@
     long: "Trivial File Transfer Protocol",
     description: "A simple protocol for transferring files, typically used for booting devices over a network.",
     group: "Networking"
+  ),
+  (
+    key: "cli",
+    short: "CLI",
+    long: "Command Line Interface",
+    description: "A text-based interface used to interact with software and operating systems by typing commands into a terminal.",
+    group: "Computer Science"
+  ),
+  (
+    key: "api",
+    short: "API",
+    long: "Application Programming Interface",
+    description: "A set of defined rules that enable different software applications to communicate with each other.",
+    group: "Computer Science"
+  ),
+  (
+    key: "i2c",
+    short: "I2C",
+    long: "Inter-Integrated Circuit",
+    description: "A synchronous, multi-controller/multi-target, single-ended, serial communication bus used for attaching lower-speed peripheral ICs to processors and microcontrollers.",
+    group: "Hardware"
+  ),
+  (
+    key: "oled",
+    short: "OLED",
+    description: "A light-emitting diode (LED) in which the emissive electroluminescent layer is a film of organic compound that emits light in response to an electric current.",
+    group: "Hardware"
   )
 )
 
