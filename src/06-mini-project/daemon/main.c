@@ -53,7 +53,7 @@ int main(void) {
         return 1;
     }
 
-    // init_oled(&oled_cbs);
+    init_oled(&oled_cbs);
 
     btn_set_led(led_power);
     init_animations();
