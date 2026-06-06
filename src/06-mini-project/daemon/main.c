@@ -30,9 +30,9 @@ int main(void) {
 
     led_t* led_power = led_init(LED_POWER);
 
-    btn_set_callback(btn_inc, btn_decrease_period);
+    btn_set_callback(btn_inc, btn_increase_period);
     btn_set_callback(btn_dec, btn_decrease_period);
-    btn_set_callback(btn_mode, set_mode);
+    btn_set_callback(btn_mode, mode_toggle);
 
     struct ipc_callbacks_t ipc_cbs = {
         .on_dec_frequency = decrease_period,
