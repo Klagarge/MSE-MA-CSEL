@@ -86,7 +86,7 @@ The `blink.c` and `blink.h` files implement the part that control the status @le
 
 The read of temperature is done through register. It implements the function to calculate the temperature from the register. It changes the formula when the temperature is over 70°C as specified in the datasheet.
 
-=== @sysfs
+=== #gls("sysfs", long: false)
 
 It uses some callbacks for every actions in the module:
 - read temperature
@@ -98,15 +98,15 @@ We separates the setter and the getter of the period to avoid some issue. Becaus
 
 == Daemon
 
-The deamon has the core in `app`. It handles the `sysfs` functions needed by the different features. It provides them for the OLED screen, buttons, LEDS and @ipc server.
+The deamon has the core in `app`. It handles the `sysfs` functions needed by the different features. It provides them for the @oled screen, buttons, @led:pl and @ipc server.
 
-=== @gpio
+=== #gls("gpio", long: false)
 We develop the @gpio part as near as possible with a pseudo class for the @led and a pseudo class for the button. The @led class is quite simple and help to have a good understanding of this principle. As shown in @fig:led-class-header, we create a structure for the @led. A `LED_init` function is used to create a @led object by returning a pointer to this structure. Function to this class start with the same prefix `LED_` and take a pointer to the structure as parameter.
 
 #figure(
   [```c
     typedef enum {
-        LED_STATUS, 
+        LED_STATUS,
         LED_POWER,
     } LED_type; // enum to choose which led we want initialize
 
@@ -134,11 +134,11 @@ We develop the button in the same way, with class spirit. But a button have no f
   caption: "Button class header"
 ) <fig:button-class-header>
 
-=== @ipc
+=== #gls("ipc", long: false)
 
 The @ipc provides a server to handle messages from other processes with a socketpair. All is defined in a common file: `src/06-mini-project/common/common_ipc.h`. This file implements the action and the format of the message through the socket.
 
-=== @oled
+=== #gls("oled", long: false)
 The @oled part have nothing special, we basically use the provided example. But we had to modify the devicetree to add the @i2c that control the screen. It was the first time we had to modify the buildroot part. We forgot a bit how it's absolutely not enough to modify in `/config/board/.../nanopi-neo-plus2.dts`. In the `get-buildroot.sh` script, there is a rsync command that was done only at the full beginning of the semester when we initialize everything. To effectively modify the devicetree, we had to copy our modification, then rebuild (it's short because most parts are already built):
 
 ```bash
@@ -150,7 +150,7 @@ make uboot-rebuild
 make
 ```
 
-Then, if we boot with @tftp, we can simply reboot. Otherwise, we have to reflash the sd card with the new image. 
+Then, if we boot with @tftp, we can simply reboot. Otherwise, we have to reflash the sd card with the new image.
 
 === application
 
@@ -162,7 +162,7 @@ This animation is managed by a signal and a condition. The function increase and
 
 
 
-== @cli
+== #gls("cli", long: false)
 
 The @cli is connected to the daemon through the socketpair define in the `common` as the @ipc. It uses the same struct and actions for changing mode or set, increase, decrease a period.
 

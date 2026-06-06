@@ -72,6 +72,7 @@
   (
     key: "led",
     short: "LED",
+    plural: "LEDS",
     long: "Light Emitting Diode",
     description: "A semiconductor light source that emits light when current flows through it.",
     group: "Hardware"
