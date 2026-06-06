@@ -34,6 +34,12 @@
   date: date,
   tableof: tableof,
 )
+#import "@preview/codly:1.3.0": *
+#import "@preview/codly-languages:0.1.8": *
+#show: codly-init.with()
+
+#codly(languages: codly-languages)
+
 #v(5em)
 #infobox()[
   The repository for this labs can be found at the following address:
@@ -93,7 +99,39 @@ We seperates the setter and the getter of the period to avoid some issue. Becaus
 
 == Daemon
 === gpio
-Overcomplicated solution, have fun for understanding my messy code. 
+We develop the gpio part as near as possible with a pseudo class for the led and a pseudo class for the button. The led class is quite simple and help to have a good understanding of this principle. As shown in @fig:led-class-header, we create a structure for the led. A `LED_init` function is used to create a LED object by returning a pointer to this structure. Function to this class start with the same prefix `LED_` and take a pointer to the structure as parameter.
+
+#figure(
+  [```c
+    typedef enum {
+        LED_STATUS, 
+        LED_POWER,
+    } LED_type; // enum to choose which led we want initialize
+
+    typedef struct {
+        int gpio;
+    } LED; // Type for our led class
+
+    LED* LED_init(LED_type type); // Create new LED object
+    void LED_on(LED* led);
+    void LED_off(LED* led);
+    void LED_toggle(LED* led);
+  ```],
+  caption: "Led class header"
+) <fig:led-class-header>
+
+We develop the button in the same way, with class spirit. But a button have no fonction to control it, but only a callback that need to be set as shown in @fig:button-class-header. So this pseudo class abstract the complexity of a button and we provide a simple API with a nice callback system. Behind the scene, we have a thread that look the button file with an `epoll` and call the callback when the button is pushed. The first button to be initialized create this static thread. All new button are added on the event list of this thread.
+
+#figure(
+  [```c
+    typedef void (*BTN_callback)();
+
+    BTN* BTN_init(BTN_type type);
+    void BTN_set_callback(BTN* btn, BTN_callback callback);
+  ```],
+  caption: "Button class header"
+) <fig:button-class-header>
+
 === ipc
 
 The @ipc provides a server to handle messages from other processus with a socketpair. All is defined in a common file: `src/06-mini-project/common/common_ipc.h`. This file implements the action and the format of the message through the socket. 
