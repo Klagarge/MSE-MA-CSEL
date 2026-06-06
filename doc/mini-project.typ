@@ -98,6 +98,9 @@ It uses some callbacks for every actions in the module:
 We seperates the setter and the getter of the period to avoid some issue. Because if we set a wrong value or in automatic mode, the value would be wrong for getting it. In the way we did it, the read value will be the current.
 
 == Daemon
+
+The deamon has the core in `app`. It handles the `sysfs` functions needed by the different features. It provides them for the OLED screen, buttons, LEDS and @ipc server. 
+
 === gpio
 We develop the gpio part as near as possible with a pseudo class for the led and a pseudo class for the button. The led class is quite simple and help to have a good understanding of this principle. As shown in @fig:led-class-header, we create a structure for the led. A `LED_init` function is used to create a LED object by returning a pointer to this structure. Function to this class start with the same prefix `LED_` and take a pointer to the structure as parameter.
 
