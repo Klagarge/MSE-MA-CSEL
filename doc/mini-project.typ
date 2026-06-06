@@ -73,7 +73,8 @@ Finally, a tiny @cli is implemented to control the daemon through the @ipc inter
 
 #general-architecture
 
-== Architecture
+#pagebreak()
+= Architecture
 
 In our architecture,  we manage to separate with callback our functionalities. Then, we use threads for multiprocessing which involve to implement some atomic operations, signals and mutex. We add socket pair and @sysfs for communication. Finally, we get some information through registers.
 
@@ -96,6 +97,7 @@ It uses some callbacks for every action in the module:
 
 We separate the setter and the getter of the period to avoid some issue. Because if we set a wrong value or in automatic mode, the value would be wrong for getting it. In the way we did it, the read value will be the current.
 
+#pagebreak()
 == Daemon
 
 The daemon has the core in `app`. It handles the `sysfs` functions needed by the different features. It provides them for the @oled screen, buttons, @led:pl and @ipc server.
@@ -138,6 +140,7 @@ We develop the button in the same way, with class spirit. But a button has no fu
 
 The @ipc provides a server to handle messages from other processes with a socket pair. All is defined in a common file: `src/06-mini-project/common/common_ipc.h`. This file implements the action and the format of the message through the socket.
 
+#pagebreak()
 === #gls("oled", long: false)
 The @oled part has nothing special, we basically use the provided example. But we had to modify the devicetree to add the @i2c that control the screen. It was the first time we had to modify the buildroot part. We forgot a bit how it's absolutely not enough to modify in `/config/board/.../nanopi-neo-plus2.dts`. In the `get-buildroot.sh` script, there is a rsync command that was done only at the full beginning of the semester when we initialize everything. To effectively modify the devicetree, we had to copy our modification, then rebuild (it's short because most parts are already built):
 
@@ -168,13 +171,14 @@ The @cli is connected to the daemon through the socketpair define in the `common
 
 It is installed in the `/usr/bin` by the `justfile`. It allows using it from everywhere in the terminal. It can be used as a tool.
 
+#pagebreak()
 = Future work
 #let link-github-project = "https://github.com/users/Klagarge/projects/3/views/1?filterQuery=is%3Aopen"
 C.f.: #link(link-github-project)[GitHub project] #footnote(link-github-project)
 
 
 = Conclusion
-Fun, but not enough time for more over-engineering.
+Really fun, but sadly not enough time for more over-engineering. #emoji.face.cry
 
 
 
