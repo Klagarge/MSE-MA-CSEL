@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-static led_t* led;
+static LED* led;
 
 /* Threads objects */
 static pthread_t anim_thread_id;
@@ -16,7 +16,7 @@ static pthread_cond_t anim_condition = PTHREAD_COND_INITIALIZER; // SHARED RESOU
 static int pending_animations = 0; // SHARED RESOURCES
 static int keep_running = 1;
 
-void btn_set_led(led_t* l) {
+void btn_set_led(LED* l) {
     if (l != NULL) {
         led = l;
     }
@@ -92,9 +92,9 @@ static void* animation_worker(void* arg) {
 
         /* Perform the visual task */
         if (led != NULL) {
-            led_on(led);
+            LED_on(led);
             usleep(150000);
-            led_off(led);
+            LED_off(led);
             usleep(100000); /* Small delay between consecutive pulses */
         }
     }

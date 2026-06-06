@@ -16,8 +16,8 @@
 
 #include <stdlib.h>
 
-led_t* led_init(led_type_t type) {
-    led_t* led = malloc(sizeof(led_t));
+LED* LED_init(LED_type type) {
+    LED* led = malloc(sizeof(LED));
     if (led == NULL) return NULL;
 
     // Concatenate GPIO LED path based on type
@@ -70,29 +70,29 @@ led_t* led_init(led_type_t type) {
     return led;
 }
 
-void led_on(led_t* led) {
+void LED_on(LED* led) {
     if (led == NULL) {
         return;
     }
     pwrite(led->gpio, "1", sizeof("1"), 0);
 }
 
-void led_off(led_t* led) {
+void LED_off(LED* led) {
     if (led == NULL) {
         return;
     }
     pwrite(led->gpio, "0", sizeof("0"), 0);
 }
 
-void led_toggle(led_t* led) {
+void LED_toggle(LED* led) {
     if (led == NULL) {
         return;
     }
     char value[2];
     pread(led->gpio, value, sizeof(value), 0);
     if (value[0] == '0') {
-        led_on(led);
+        LED_on(led);
     } else {
-        led_off(led);
+        LED_off(led);
     }
 }

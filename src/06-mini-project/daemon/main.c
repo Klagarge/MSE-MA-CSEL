@@ -1,7 +1,6 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -24,15 +23,15 @@
 int main(void) {
 
 
-    btn_t* btn_inc = btn_init(BTN_INCREASE);
-    btn_t* btn_dec = btn_init(BTN_DECREASE);
-    btn_t* btn_mode = btn_init(BTN_MODE);
+    BTN* btn_inc = BTN_init(BTN_INCREASE);
+    BTN* btn_dec = BTN_init(BTN_DECREASE);
+    BTN* btn_mode = BTN_init(BTN_MODE);
 
-    led_t* led_power = led_init(LED_POWER);
+    LED* led_power = LED_init(LED_POWER);
 
-    btn_set_callback(btn_inc, btn_increase_period);
-    btn_set_callback(btn_dec, btn_decrease_period);
-    btn_set_callback(btn_mode, mode_toggle);
+    BTN_set_callback(btn_inc, btn_increase_period);
+    BTN_set_callback(btn_dec, btn_decrease_period);
+    BTN_set_callback(btn_mode, mode_toggle);
 
     struct ipc_callbacks_t ipc_cbs = {
         .on_dec_period = decrease_period,

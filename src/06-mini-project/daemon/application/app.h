@@ -28,7 +28,7 @@ float get_temperature();
 
 /* --- Button specific function --- */
 
-void btn_set_led(led_t* l);
+void btn_set_led(LED* l);
 void init_animations(void);
 
 void btn_increase_period();

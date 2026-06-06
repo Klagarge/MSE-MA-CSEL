@@ -9,17 +9,17 @@ typedef enum {
     BTN_INCREASE,
     BTN_DECREASE,
     BTN_MODE,
-} btn_type_t;
+} BTN_type;
 
-typedef void (*btn_callback_t)();
+typedef void (*BTN_callback)();
 
 typedef struct {
     int fd;
     char pin[32];
-    btn_callback_t callback;
-} btn_t;
+    BTN_callback callback;
+} BTN;
 
-btn_t* btn_init(btn_type_t type);
-void btn_set_callback(btn_t* btn, btn_callback_t callback);
+BTN* BTN_init(BTN_type type);
+void BTN_set_callback(BTN* btn, BTN_callback callback);
 
 #endif

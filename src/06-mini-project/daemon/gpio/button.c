@@ -16,19 +16,19 @@
 #define GPIO_BTN_BASE "/sys/class/gpio/gpio"
 
 #define MAX_BTN 10
-btn_t* btn_list[MAX_BTN];
+BTN* btn_list[MAX_BTN];
 
 int epoll_fd;
 struct epoll_event ev[MAX_BTN];
 atomic_int btn_tail = 0;
 pthread_t epoll_thread_id;
 
-void btn_add_epoll_event(btn_t* btn, int tail);
+void BTN_add_epoll_event(BTN* btn, int tail);
 void epoll_init();
 static void* epoll_thread(void* arg);
 
-btn_t* btn_init(btn_type_t type) {
-    btn_t* btn = malloc(sizeof(btn_t));
+BTN* BTN_init(BTN_type type) {
+    BTN* btn = malloc(sizeof(BTN));
     if (btn == NULL) return NULL;
 
     char gpio_path[32] = GPIO_BTN_BASE;
@@ -97,17 +97,17 @@ btn_t* btn_init(btn_type_t type) {
     if (tail == 0) {
         epoll_init();
     }
-    btn_add_epoll_event(btn, tail);
+    BTN_add_epoll_event(btn, tail);
 
     return btn;
 }
 
-void btn_set_callback(btn_t* btn, btn_callback_t callback) {
+void BTN_set_callback(BTN* btn, BTN_callback callback) {
     btn->callback = callback;
 }
 
 // TODO add mutex to protect this function
-void btn_add_epoll_event(btn_t* btn, int tail) {
+void BTN_add_epoll_event(BTN* btn, int tail) {
 
     // EPOLLIN is working well as EPOLLPRI (which is more used for priority data)
     // EPOLLERR is used to detect if there is an error
@@ -148,7 +148,7 @@ static void* epoll_thread(void* arg) {
             char buf[2];
             int fd = events[i].data.fd;
             int tail = -1;
-            btn_t* btn = NULL;
+            BTN* btn = NULL;
             for (int j = 0; j < MAX_BTN; j++) {
                 if (btn_list[j] == NULL) continue;
                 if (btn_list[j]->fd == fd) {
