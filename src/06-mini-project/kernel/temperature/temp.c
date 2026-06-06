@@ -58,11 +58,6 @@ uint32_t read_temp(void) {
         temperature = -1452 * (int32_t)raw_val / 10 + 259000;
     }
 
-    pr_info("temp_regulator: Temperature=%u.%03u C (register raw value: %u)\n",
-            temperature / 1000,
-            temperature % 1000,
-            raw_val);
-
     return temperature;
 }
 
