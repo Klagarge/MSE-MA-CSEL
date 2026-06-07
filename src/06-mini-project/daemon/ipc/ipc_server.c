@@ -7,17 +7,22 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <stdbool.h>
+
+#include <stdatomic.h>
 
 /* Global variables for the IPC module */
 static int server_fd = -1;
 static pthread_t ipc_thread;
 static struct ipc_callbacks_t current_cbs = {0};
-static int is_running = 0;
+static pthread_mutex_t cb_mutex = PTHREAD_MUTEX_INITIALIZER;
+static atomic_bool is_running = false;
 
 /**
  * process_message() - Route the received IPC message to the correct callback.
  */
 static void process_message(ipc_msg_t *msg) {
+    pthread_mutex_lock(&cb_mutex);
     switch (msg->command) {
         case CMD_SET_MODE:
             if (current_cbs.on_set_mode) {
@@ -47,6 +52,7 @@ static void process_message(ipc_msg_t *msg) {
             printf("[IPC] Received unknown command: %d\n", msg->command);
             break;
     }
+    pthread_mutex_unlock(&cb_mutex);
 }
 
 /**
@@ -92,9 +98,11 @@ int start_ipc_server(struct ipc_callbacks_t *cbs) {
     }
 
     /* Save the provided callbacks */
+    pthread_mutex_lock(&cb_mutex);
     if (cbs) {
         current_cbs = *cbs;
     }
+    pthread_mutex_unlock(&cb_mutex);
 
     /* Create local socket */
     server_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
@@ -139,7 +147,7 @@ int stop_ipc_server(void) {
     printf("[IPC] Stopping server...\n");
 
     /* Signal thread to stop */
-    is_running = 0;
+    atomic_store(&is_running, false);
 
     /* Unblock the recvfrom() by shutting down the socket */
     if (server_fd != -1) {
@@ -155,7 +163,9 @@ int stop_ipc_server(void) {
     unlink(SOCKET_PATH);
 
     /* Clear callbacks */
+    pthread_mutex_lock(&cb_mutex);
     memset(&current_cbs, 0, sizeof(struct ipc_callbacks_t));
+    pthread_mutex_unlock(&cb_mutex);
 
     return 0;
 }

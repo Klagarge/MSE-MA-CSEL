@@ -3,7 +3,9 @@
 
 #include <pthread.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <stdbool.h>
+
+#include <stdatomic.h>
 
 static LED* led;
 
@@ -11,10 +13,11 @@ static LED* led;
 static pthread_t anim_thread_id;
 static pthread_mutex_t anim_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t anim_condition = PTHREAD_COND_INITIALIZER; // SHARED RESOURCES
+static pthread_mutex_t app_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* The counter of pending animations */
 static int pending_animations = 0; // SHARED RESOURCES
-static int keep_running = 1;
+static atomic_bool keep_running = true;
 
 void btn_set_led(LED* l) {
     if (l != NULL) {
@@ -31,13 +34,19 @@ uint32_t get_period() {
 }
 
 void increase_period() {
+    pthread_mutex_lock(&app_lock);
     uint32_t current_period = sysfs_get_period();
     set_period(current_period + GAP_PERIOD_MS);
+    pthread_mutex_unlock(&app_lock);
 }
 
 void decrease_period() {
+    pthread_mutex_lock(&app_lock);
     uint32_t current_period = sysfs_get_period();
-    set_period(current_period - GAP_PERIOD_MS);
+    if (current_period > GAP_PERIOD_MS) {
+        set_period(current_period - GAP_PERIOD_MS);
+    }
+    pthread_mutex_unlock(&app_lock);
 }
 
 int get_mode() {
@@ -49,8 +58,10 @@ void set_mode(int mode) {
 }
 
 void mode_toggle() {
+    pthread_mutex_lock(&app_lock);
     int current_mode = sysfs_get_mode();
     set_mode(current_mode ^ 1);
+    pthread_mutex_unlock(&app_lock);
 }
 
 float get_temperature() {
@@ -93,9 +104,9 @@ static void* animation_worker(void* arg) {
         /* Perform the visual task */
         if (led != NULL) {
             LED_on(led);
-            usleep(150000);
+            usleep(20000);
             LED_off(led);
-            usleep(100000); /* Small delay between consecutive pulses */
+            usleep(50000); /* Small delay between consecutive pulses */
         }
     }
     return NULL;
