@@ -21,17 +21,30 @@
 
 
 int main(void) {
+    BTN btn_inc, btn_dec, btn_mode;
 
+    if (BTN_init(&btn_inc, BTN_INCREASE) != 0) {
+        fprintf(stderr, "Failed to initialize increase button\n");
+        return 1;
+    }
+    if (BTN_init(&btn_dec, BTN_DECREASE) != 0) {
+        fprintf(stderr, "Failed to initialize decrease button\n");
+        return 1;
+    }
+    if (BTN_init(&btn_mode, BTN_MODE) != 0) {
+        fprintf(stderr, "Failed to initialize mode button\n");
+        return 1;
+    }
 
-    BTN* btn_inc = BTN_init(BTN_INCREASE);
-    BTN* btn_dec = BTN_init(BTN_DECREASE);
-    BTN* btn_mode = BTN_init(BTN_MODE);
+    LED led_power;
+    if (LED_init(&led_power, LED_POWER) != 0) {
+        fprintf(stderr, "Failed to initialize power LED\n");
+        return 1;
+    }
 
-    LED* led_power = LED_init(LED_POWER);
-
-    BTN_set_callback(btn_inc, btn_increase_period);
-    BTN_set_callback(btn_dec, btn_decrease_period);
-    BTN_set_callback(btn_mode, mode_toggle);
+    BTN_set_callback(&btn_inc, btn_increase_period);
+    BTN_set_callback(&btn_dec, btn_decrease_period);
+    BTN_set_callback(&btn_mode, mode_toggle);
 
     struct ipc_callbacks_t ipc_cbs = {
         .on_dec_period = decrease_period,
@@ -54,7 +67,7 @@ int main(void) {
 
     init_oled(&oled_cbs);
 
-    btn_set_led(led_power);
+    btn_set_led(&led_power);
     init_animations();
 
     while (1) {
@@ -62,5 +75,9 @@ int main(void) {
     }
 
     stop_ipc_server();
+    LED_deinit(&led_power);
+    BTN_deinit(&btn_inc);
+    BTN_deinit(&btn_dec);
+    BTN_deinit(&btn_mode);
     return 0;
 }

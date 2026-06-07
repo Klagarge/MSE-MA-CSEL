@@ -29,9 +29,9 @@ void BTN_add_epoll_event(BTN* btn, int tail);
 void epoll_init();
 static void* epoll_thread(void* arg);
 
-BTN* BTN_init(BTN_type type) {
-    BTN* btn = malloc(sizeof(BTN));
-    if (btn == NULL) return NULL;
+int BTN_init(BTN* btn, BTN_type type) {
+    if (btn == NULL) return -1;
+
     pthread_mutex_init(&btn->mutex, NULL);
     btn->callback = NULL;
 
@@ -48,15 +48,18 @@ BTN* BTN_init(BTN_type type) {
             break;
         default:
             printf("Invalid button type\n");
-            return NULL;
+            return -1;
     }
     strcat(gpio_path, btn->pin);
 
     int f = open(GPIO_UNEXPORT, O_WRONLY);
-    write(f, btn->pin, strlen(btn->pin));
-    close(f);
+    if (f != -1) {
+        write(f, btn->pin, strlen(btn->pin));
+        close(f);
+    }
 
     f = open(GPIO_EXPORT, O_WRONLY);
+    if (f == -1) return -1;
     write(f, btn->pin, strlen(btn->pin));
     close(f);
 
@@ -65,6 +68,7 @@ BTN* BTN_init(BTN_type type) {
     strcat(direction_path, "/direction");
 
     f = open(direction_path, O_WRONLY);
+    if (f == -1) return -1;
     write(f, "in", 2);
     close(f);
 
@@ -73,7 +77,8 @@ BTN* BTN_init(BTN_type type) {
     strcat(edge_path, "/edge");
 
     f = open(edge_path, O_WRONLY);
-    write(f, "both", 4); // "both" means it triggers on press AND release
+    if (f == -1) return -1;
+    write(f, "both", 4);
     close(f);
 
     char value_path[100];
@@ -83,7 +88,7 @@ BTN* BTN_init(BTN_type type) {
     f = open(value_path, O_RDONLY);
     if (f == -1) {
         printf("Failed to setup button on pin %s\n", btn->pin);
-        return NULL;
+        return -1;
     }
     btn->fd = f;
 
@@ -96,7 +101,8 @@ BTN* BTN_init(BTN_type type) {
     if (tail >= MAX_BTN) {
         pthread_mutex_unlock(&btn_list_mutex);
         perror("Failed to add epoll event");
-        exit(EXIT_FAILURE);
+        close(btn->fd);
+        return -1;
     }
 
     btn_list[tail] = btn;
@@ -106,7 +112,18 @@ BTN* BTN_init(BTN_type type) {
     BTN_add_epoll_event(btn, tail);
     pthread_mutex_unlock(&btn_list_mutex);
 
-    return btn;
+    return 0;
+}
+
+void BTN_deinit(BTN* btn) {
+    if (btn == NULL) return;
+    pthread_mutex_lock(&btn->mutex);
+    if (btn->fd != -1) {
+        close(btn->fd);
+        btn->fd = -1;
+    }
+    pthread_mutex_unlock(&btn->mutex);
+    pthread_mutex_destroy(&btn->mutex);
 }
 
 void BTN_set_callback(BTN* btn, BTN_callback callback) {
@@ -121,7 +138,7 @@ void BTN_add_epoll_event(BTN* btn, int tail) {
     // EPOLLERR is used to detect if there is an error
     // EPOLLET is for edge triggered mode (non-blocking)
     ev[tail].events = EPOLLIN | EPOLLERR | EPOLLET;
-    ev[tail].data.fd = btn->fd;
+    ev[tail].data.ptr = btn;
 
     int ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, btn->fd, &ev[tail]);
     if (ret < 0) {
@@ -154,28 +171,19 @@ static void* epoll_thread(void* arg) {
         }
         for (int i = 0; i < n; i++) {
             char buf[2];
-            int fd = events[i].data.fd;
-            int tail = -1;
-            BTN* btn = NULL;
-            for (int j = 0; j < MAX_BTN; j++) {
-                if (btn_list[j] == NULL) continue;
-                if (btn_list[j]->fd == fd) {
-                    tail = j;
-                    btn = btn_list[j];
-                    break;
+            BTN* btn = (BTN*)events[i].data.ptr;
+            if (btn == NULL) continue;
+
+            pthread_mutex_lock(&btn->mutex);
+            if (btn->fd != -1) {
+                pread(btn->fd, buf, sizeof(buf), 0);
+                if (buf[0] == '1') {
+                    if (btn->callback != NULL) {
+                        btn->callback();
+                    }
                 }
             }
-            if (tail == -1) {
-                printf("No button found for fd %d\n", fd);
-                continue;
-            }
-            pread(btn->fd, buf, sizeof(buf), 0);
-            if (buf[0] == '1') {
-                // printf("Button %s pressed\n", btn->pin);
-                if (btn->callback != NULL) {
-                    btn->callback();
-                }
-            }
+            pthread_mutex_unlock(&btn->mutex);
         }
     }
     return NULL;

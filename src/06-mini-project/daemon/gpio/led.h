@@ -16,9 +16,10 @@ typedef struct {
     pthread_mutex_t mutex;
 } LED;
 
-LED* LED_init(LED_type type);
+int LED_init(LED* led, LED_type type);
 void LED_on(LED* led);
 void LED_off(LED* led);
 void LED_toggle(LED* led);
+void LED_deinit(LED* led);
 
 #endif //LED_H

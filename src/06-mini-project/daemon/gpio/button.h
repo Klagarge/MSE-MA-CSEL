@@ -22,7 +22,8 @@ typedef struct {
     pthread_mutex_t mutex;
 } BTN;
 
-BTN* BTN_init(BTN_type type);
+int BTN_init(BTN* btn, BTN_type type);
+void BTN_deinit(BTN* btn);
 void BTN_set_callback(BTN* btn, BTN_callback callback);
 
 #endif

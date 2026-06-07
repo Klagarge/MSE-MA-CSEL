@@ -16,9 +16,8 @@
 
 #include <stdlib.h>
 
-LED* LED_init(LED_type type) {
-    LED* led = malloc(sizeof(LED));
-    if (led == NULL) return NULL;
+int LED_init(LED* led, LED_type type) {
+    if (led == NULL) return -1;
 
     // Concatenate GPIO LED path based on type
     char gpio_path[32] = GPIO_LED_BASE;
@@ -32,7 +31,7 @@ LED* LED_init(LED_type type) {
             break;
         default:
             printf("Invalid LED type\n");
-            return NULL;
+            return -1;
     }
     strcat(gpio_path, pin);
 
@@ -63,15 +62,15 @@ LED* LED_init(LED_type type) {
     f = open(value_path, O_RDWR);
     if (f == -1) {
         printf("Failed to setup led on pin %s\n", pin);
-        return NULL;
+        return -1;
     }
 
     led->gpio = f;
     if (pthread_mutex_init(&led->mutex, NULL) != 0) {
         close(f);
-        return NULL;
+        return -1;
     }
-    return led;
+    return 0;
 }
 
 void LED_on(LED* led) {
@@ -100,8 +99,17 @@ void LED_toggle(LED* led) {
     char value[2];
     pread(led->gpio, value, sizeof(value), 0);
     if (value[0] == '0') {
-        LED_on(led);
+        pwrite(led->gpio, "1", sizeof("1"), 0);
     } else {
-        LED_off(led);
+        pwrite(led->gpio, "0", sizeof("0"), 0);
     }
+    pthread_mutex_unlock(&led->mutex);
+}
+
+void LED_deinit(LED* led) {
+    if (led == NULL) {
+        return;
+    }
+    pthread_mutex_destroy(&led->mutex);
+    close(led->gpio);
 }
