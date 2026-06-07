@@ -67,6 +67,10 @@ LED* LED_init(LED_type type) {
     }
 
     led->gpio = f;
+    if (pthread_mutex_init(&led->mutex, NULL) != 0) {
+        close(f);
+        return NULL;
+    }
     return led;
 }
 
@@ -74,20 +78,25 @@ void LED_on(LED* led) {
     if (led == NULL) {
         return;
     }
+    pthread_mutex_lock(&led->mutex);
     pwrite(led->gpio, "1", sizeof("1"), 0);
+    pthread_mutex_unlock(&led->mutex);
 }
 
 void LED_off(LED* led) {
     if (led == NULL) {
         return;
     }
+    pthread_mutex_lock(&led->mutex);
     pwrite(led->gpio, "0", sizeof("0"), 0);
+    pthread_mutex_unlock(&led->mutex);
 }
 
 void LED_toggle(LED* led) {
     if (led == NULL) {
         return;
     }
+    pthread_mutex_lock(&led->mutex);
     char value[2];
     pread(led->gpio, value, sizeof(value), 0);
     if (value[0] == '0') {

@@ -1,6 +1,8 @@
 #ifndef LED_H
 #define LED_H
 
+#include <pthread.h>
+
 #define GPIO_LED_STATUS "10"
 #define GPIO_LED_POWER  "362"
 
@@ -11,6 +13,7 @@ typedef enum {
 
 typedef struct {
     int gpio;
+    pthread_mutex_t mutex;
 } LED;
 
 LED* LED_init(LED_type type);

@@ -18,6 +18,8 @@
 #define MAX_BTN 10
 BTN* btn_list[MAX_BTN];
 
+pthread_mutex_t btn_list_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 int epoll_fd;
 struct epoll_event ev[MAX_BTN];
 atomic_int btn_tail = 0;
@@ -30,6 +32,8 @@ static void* epoll_thread(void* arg);
 BTN* BTN_init(BTN_type type) {
     BTN* btn = malloc(sizeof(BTN));
     if (btn == NULL) return NULL;
+    pthread_mutex_init(&btn->mutex, NULL);
+    btn->callback = NULL;
 
     char gpio_path[32] = GPIO_BTN_BASE;
     switch (type) {
@@ -87,8 +91,10 @@ BTN* BTN_init(BTN_type type) {
     char buf[2];
     pread(btn->fd, buf, sizeof(buf), 0);
 
+    pthread_mutex_lock(&btn_list_mutex);
     int tail = atomic_fetch_add(&btn_tail, 1);
     if (tail >= MAX_BTN) {
+        pthread_mutex_unlock(&btn_list_mutex);
         perror("Failed to add epoll event");
         exit(EXIT_FAILURE);
     }
@@ -98,15 +104,17 @@ BTN* BTN_init(BTN_type type) {
         epoll_init();
     }
     BTN_add_epoll_event(btn, tail);
+    pthread_mutex_unlock(&btn_list_mutex);
 
     return btn;
 }
 
 void BTN_set_callback(BTN* btn, BTN_callback callback) {
+    pthread_mutex_lock(&btn->mutex);
     btn->callback = callback;
+    pthread_mutex_unlock(&btn->mutex);
 }
 
-// TODO add mutex to protect this function
 void BTN_add_epoll_event(BTN* btn, int tail) {
 
     // EPOLLIN is working well as EPOLLPRI (which is more used for priority data)
