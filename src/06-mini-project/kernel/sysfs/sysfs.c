@@ -5,6 +5,7 @@
 #include <linux/sysfs.h>
 #include <linux/fs.h>
 #include <linux/err.h>
+#include <linux/mutex.h>
 
 #include "sysfs.h"
 
@@ -13,14 +14,17 @@ static struct device *sysfs_device = NULL;
 
 /* Global static structure to hold the registered callbacks */
 static struct sysfs_callbacks device_cbs = {0};
+static DEFINE_MUTEX(sysfs_lock);
 
 /* Callback triggered on sysfs temperature file read */
 static ssize_t temperature_show(struct device *dev, struct device_attribute *attr, char *buf) {
     uint32_t temp = 0;
 
+    mutex_lock(&sysfs_lock);
     if (device_cbs.get_temperature) {
         temp = device_cbs.get_temperature();
     }
+    mutex_unlock(&sysfs_lock);
 
     /* Format the temperature and write it to the buffer */
     return snprintf(buf, PAGE_SIZE, "%u.%03u\n", temp / 1000, temp % 1000);
@@ -30,9 +34,11 @@ static ssize_t temperature_show(struct device *dev, struct device_attribute *att
 static ssize_t mode_show(struct device *dev, struct device_attribute *attr, char *buf) {
     int mode = 0;
 
+    mutex_lock(&sysfs_lock);
     if (device_cbs.get_mode) {
         mode = device_cbs.get_mode();
     }
+    mutex_unlock(&sysfs_lock);
 
     return snprintf(buf, PAGE_SIZE, "%d\n", mode);
 }
@@ -43,9 +49,11 @@ static ssize_t mode_store(struct device *dev, struct device_attribute *attr, con
 
     /* Safely convert string from user space to integer */
     if (kstrtoint(buf, 10, &mode) == 0) {
+        mutex_lock(&sysfs_lock);
         if (device_cbs.set_mode) {
             device_cbs.set_mode(mode);
         }
+        mutex_unlock(&sysfs_lock);
     }
 
     return count;
@@ -55,9 +63,11 @@ static ssize_t mode_store(struct device *dev, struct device_attribute *attr, con
 static ssize_t period_status_show(struct device *dev, struct device_attribute *attr, char *buf) {
     uint32_t period = 0;
 
+    mutex_lock(&sysfs_lock);
     if (device_cbs.get_period) {
         period = device_cbs.get_period();
     }
+    mutex_unlock(&sysfs_lock);
 
     return snprintf(buf, PAGE_SIZE, "%u\n", period);
 }
@@ -67,9 +77,11 @@ static ssize_t period_set_store(struct device *dev, struct device_attribute *att
     uint32_t period;
 
     if (kstrtouint(buf, 10, &period) == 0) {
+        mutex_lock(&sysfs_lock);
         if (device_cbs.set_period) {
             device_cbs.set_period(period);
         }
+        mutex_unlock(&sysfs_lock);
     }
 
     return count;
@@ -97,10 +109,12 @@ static const struct attribute_group regulator_group = {
 int temp_regulator_sysfs_init(struct sysfs_callbacks *cbs) {
     int ret;
 
+    mutex_lock(&sysfs_lock);
     /* Save the callbacks provided by the main module */
     if (cbs) {
         device_cbs = *cbs;
     }
+    mutex_unlock(&sysfs_lock);
 
     /* Create sysfs class */
     sysfs_class = class_create(THIS_MODULE, "temp_regulator");

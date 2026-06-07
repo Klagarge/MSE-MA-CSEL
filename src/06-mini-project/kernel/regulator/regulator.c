@@ -3,6 +3,7 @@
 #include <linux/kthread.h>
 #include <linux/delay.h>
 #include <linux/err.h>
+#include <linux/mutex.h>
 
 #include "regulator.h"
 #include "../sysfs/sysfs.h"
@@ -14,6 +15,7 @@ static uint32_t current_period = 1000;   /* Current blinking period in ms */
 static struct task_struct *regulator_thread = NULL;
 
 static struct regulator_callbacks regulator_cbs = {0};
+static DEFINE_MUTEX(regulator_lock);
 
 /* --- Sysfs Callbacks --- */
 
@@ -22,22 +24,33 @@ static uint32_t cb_get_temperature(void) {
 }
 
 static int cb_get_mode(void) {
-    return current_mode;
+    int mode;
+    mutex_lock(&regulator_lock);
+    mode = current_mode;
+    mutex_unlock(&regulator_lock);
+    return mode;
 }
 
 static void cb_set_mode(int mode) {
     /* Accept only 0 or 1 as valid modes */
     if (mode == 0 || mode == 1) {
+        mutex_lock(&regulator_lock);
         current_mode = mode;
+        mutex_unlock(&regulator_lock);
         pr_info("regulator: Mode switched to %s\n", mode ? "Auto" : "Manual");
     }
 }
 
 static uint32_t cb_get_period(void) {
-    return current_period;
+    uint32_t period;
+    mutex_lock(&regulator_lock);
+    period = current_period;
+    mutex_unlock(&regulator_lock);
+    return period;
 }
 
 static void cb_set_period(uint32_t period_ms) {
+    mutex_lock(&regulator_lock);
     /* Allow period changes only in Manual mode */
     if (current_mode == 0) {
         if (period_ms > 0) {
@@ -51,6 +64,7 @@ static void cb_set_period(uint32_t period_ms) {
     } else {
         pr_warn("regulator: Cannot set period manually in auto mode\n");
     }
+    mutex_unlock(&regulator_lock);
 }
 
 /* Pack callbacks into the structure expected by sysfs */
@@ -80,6 +94,7 @@ static void process_auto_mode(void) {
         new_period = 50;
     }
 
+    mutex_lock(&regulator_lock);
     /* Apply only if the period has changed to avoid unnecessary hardware updates */
     if (new_period != current_period) {
         current_period = new_period;
@@ -87,12 +102,19 @@ static void process_auto_mode(void) {
         pr_info("regulator: Auto mode adjusted period to %u ms (Temp: %u C)\n",
                 current_period, temp_c);
     }
+    mutex_unlock(&regulator_lock);
 }
 
 /* Background thread checking the temperature periodically */
 static int regulator_thread_fn(void *data) {
     while (!kthread_should_stop()) {
-        if (current_mode == 1) {
+        int mode;
+
+        mutex_lock(&regulator_lock);
+        mode = current_mode;
+        mutex_unlock(&regulator_lock);
+
+        if (mode == 1) {
             process_auto_mode();
         }
         msleep(1000);

@@ -4,6 +4,7 @@
 #include <linux/ioport.h>
 #include <linux/io.h>
 #include <linux/errno.h>
+#include <linux/mutex.h>
 
 #include "temp.h"
 
@@ -13,8 +14,11 @@
 
 static struct resource *temp_res = NULL;
 static void __iomem *temp_reg = NULL;
+static DEFINE_MUTEX(temp_lock);
 
 int temp_init(void) {
+    mutex_lock(&temp_lock);
+
     /* Request physical memory region */
     temp_res = request_mem_region(TEMPERATURE_SENSOR_BASE_ADDR,
                                   TEMPERATURE_SENSOR_REG_SIZE,
@@ -28,12 +32,17 @@ int temp_init(void) {
     if (temp_reg == NULL) {
         pr_err("temp_regulator: Failed to ioremap registers\n");
         /* Clean up previously requested region */
-        release_mem_region(TEMPERATURE_SENSOR_BASE_ADDR, TEMPERATURE_SENSOR_REG_SIZE);
-        temp_res = NULL;
+        if (temp_res) {
+            release_mem_region(TEMPERATURE_SENSOR_BASE_ADDR, TEMPERATURE_SENSOR_REG_SIZE);
+            temp_res = NULL;
+        }
+        mutex_unlock(&temp_lock);
         return -ENOMEM;
     }
 
     pr_info("temp_regulator: Temperature sensor memory successfully mapped\n");
+
+    mutex_unlock(&temp_lock);
     return 0;
 }
 
@@ -41,8 +50,11 @@ uint32_t read_temp(void) {
     uint32_t temperature = 0;
     uint32_t raw_val = 0;
 
+    mutex_lock(&temp_lock);
+
     if (temp_reg == NULL) {
         pr_warn("temp_regulator: Cannot read temperature, sensor not initialized\n");
+        mutex_unlock(&temp_lock);
         return 0;
     }
 
@@ -58,10 +70,13 @@ uint32_t read_temp(void) {
         temperature = -1452 * (int32_t)raw_val / 10 + 259000;
     }
 
+    mutex_unlock(&temp_lock);
     return temperature;
 }
 
 void temp_exit(void) {
+    mutex_lock(&temp_lock);
+
     /* Unmap virtual address space */
     if (temp_reg != NULL) {
         iounmap(temp_reg);
@@ -73,6 +88,8 @@ void temp_exit(void) {
         release_mem_region(TEMPERATURE_SENSOR_BASE_ADDR, TEMPERATURE_SENSOR_REG_SIZE);
         temp_res = NULL;
     }
+
+    mutex_unlock(&temp_lock);
 
     pr_info("temp_regulator: Temperature sensor resources released\n");
 }
