@@ -2,21 +2,39 @@ mod kernel
 mod daemon
 mod cli
 
+target_ssh := "root@192.168.53.14"
+
+# List available recipes
 @default:
     just --list
 
+# Build all components (kernel module, daemon, and cli)
 @build:
     just kernel::build
     just daemon::build
     just cli::build
 
+# Install all components to the local rootfs
 @install:
     just kernel::install
+    just daemon::install
     just cli::install
 
+# Load the kernel module and start the daemon on the target
+@run:
+    ssh {{target_ssh}} "modprobe temp_regulator"
+    ssh {{target_ssh}} "start-stop-daemon --start --background --exec /usr/bin/daemon"
+
+# Stop the daemon and unload the kernel module on the target
+@stop:
+    ssh {{target_ssh}} "start-stop-daemon --stop --exec /usr/bin/daemon || true"
+    ssh {{target_ssh}} "modprobe -r temp_regulator || true"
+
+# Clean build artifacts and remove installed files from local rootfs
 @clean:
     just kernel::clean
     just daemon::clean
     just cli::clean
 
-@all: clean build install
+# Clean, build, install, and run everything
+@all: clean build install run

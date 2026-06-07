@@ -8,4 +8,4 @@
     make install
 
 @clean:
-  make clean
+    make clean

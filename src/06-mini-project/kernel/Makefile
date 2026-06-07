@@ -30,10 +30,12 @@ all:
 
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
+	rm -f $(MODPATH)/etc/modprobe.d/$(MODULE).conf
+	rm -f $(MODPATH)/lib/modules/*/extra/$(MODULE).ko
 	echo $(PATH)
 
 install:
 	$(MAKE) -C $(KDIR) M=$(PWD) INSTALL_MOD_PATH=$(MODPATH) modules_install
-	# install -D -m 0644 $(MODULE).conf $(MODPATH)/etc/modprobe.d/$(MODULE).conf
+	install -D -m 0644 $(MODULE).conf $(MODPATH)/etc/modprobe.d/$(MODULE).conf
 
 endif

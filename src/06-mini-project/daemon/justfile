@@ -4,6 +4,11 @@
 @build:
     make
 
+@install:
+    install -m 0755 daemon /rootfs/usr/bin/daemon
+    echo "daemon installed successfully in /rootfs/usr/bin/"
+
 @clean:
     make clean
     rm -f -- daemon
+    rm -f /rootfs/usr/bin/daemon
